@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block title %}New Testimonial Request{% endblock %}
+
+{% block content %}
+<h1 class="text-2xl font-bold mb-4">Create New Testimonial Request</h1>
+<form action="{{ url_for('send_testimonial_request') }}" method="POST" class="space-y-4">
+    <div>
+        <label for="email" class="block mb-2">Email:</label>
+        <input type="email" id="email" name="email" required class="w-full px-3 py-2 border rounded">
+    </div>
+    <div>
+        <label for="first_name" class="block mb-2">First Name:</label>
+        <input type="text" id="first_name" name="first_name" required class="w-full px-3 py-2 border rounded">
+    </div>
+    <button type="submit" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">Send Request</button>
+</form>
+{% endblock %}

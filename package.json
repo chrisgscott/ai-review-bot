@@ -1,0 +1,18 @@
+{
+  "name": "ai-review-bot",
+  "version": "1.0.0",
+  "description": "AI-enhanced review bot for collecting compelling client testimonials",
+  "main": "index.js",
+  "scripts": {
+    "build-css": "tailwindcss -i ./static/css/tailwind.css -o ./static/css/main.css --watch",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "autoprefixer": "^10.4.14",
+    "postcss": "^8.4.23",
+    "tailwindcss": "^3.3.2"
+  }
+}

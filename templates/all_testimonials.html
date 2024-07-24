@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block title %}All Testimonials{% endblock %}
+
+{% block content %}
+<h1 class="text-2xl font-bold mb-4">All Testimonials</h1>
+<div class="space-y-4">
+    {% for testimonial in testimonials %}
+        <div class="bg-white p-4 rounded shadow">
+            <h3 class="font-bold">Testimonial #{{ testimonial.id }}</h3>
+            <p>{{ testimonial.summary }}</p>
+            <p class="text-sm text-gray-500">Sentiment: {{ testimonial.sentiment }} ({{ testimonial.score }})</p>
+        </div>
+    {% else %}
+        <p>No testimonials submitted yet.</p>
+    {% endfor %}
+</div>
+{% endblock %}

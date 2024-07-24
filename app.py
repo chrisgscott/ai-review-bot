@@ -37,6 +37,7 @@ configuration = sib_api_v3_sdk.Configuration()
 configuration.api_key['api-key'] = app.config['BREVO_API_KEY']
 api_instance = sib_api_v3_sdk.TransactionalEmailsApi(sib_api_v3_sdk.ApiClient(configuration))
 
+# Models
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
@@ -72,6 +73,11 @@ def load_user(user_id):
 
 with app.app_context():
     db.create_all()
+
+# Routes
+@app.route('/')
+def index():
+    return render_template('index.html')
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -109,9 +115,49 @@ def logout():
     flash('Logged out successfully.', 'success')
     return redirect(url_for('login'))
 
-@app.route('/')
-def index():
-    return render_template('index.html')
+@app.route('/dashboard')
+@login_required
+def dashboard():
+    return render_template('dashboard.html')
+
+@app.route('/new_testimonial')
+@login_required
+def new_testimonial():
+    return render_template('new_testimonial.html')
+
+@app.route('/all_testimonials')
+@login_required
+def all_testimonials():
+    testimonials = Testimonial.query.all()
+    return render_template('all_testimonials.html', testimonials=testimonials)
+
+@app.route('/pending_requests')
+@login_required
+def pending_requests():
+    requests = TestimonialRequest.query.filter_by(user_id=current_user.id, submitted=False).all()
+    return render_template('pending_requests.html', requests=requests)
+
+@app.route('/profile', methods=['GET', 'POST'])
+@login_required
+def profile():
+    profile = BusinessProfile.query.filter_by(user_id=current_user.id).first()
+    if request.method == 'POST':
+        if profile:
+            profile.business_name = request.form['business_name']
+            profile.business_description = request.form['business_description']
+            profile.testimonial_guidance = request.form['testimonial_guidance']
+        else:
+            profile = BusinessProfile(
+                business_name=request.form['business_name'],
+                business_description=request.form['business_description'],
+                testimonial_guidance=request.form['testimonial_guidance'],
+                user_id=current_user.id
+            )
+            db.session.add(profile)
+        db.session.commit()
+        flash('Profile updated successfully.', 'success')
+        return redirect(url_for('profile'))
+    return render_template('profile.html', profile=profile)
 
 @app.route('/submit_testimonial/<unique_id>', methods=['GET', 'POST'])
 def submit_testimonial_by_link(unique_id):
@@ -149,38 +195,6 @@ def submit_testimonial_by_link(unique_id):
     
     return render_template('submit_testimonial.html', first_name=testimonial_request.first_name)
 
-@app.route('/submit_testimonial', methods=['POST'])
-def submit_testimonial():
-    data = request.json
-    questions = data['questions']
-    responses = data['responses']
-    
-    # Combine questions and responses for analysis
-    full_text = " ".join([f"Q: {q} A: {r}" for q, r in zip(questions, responses)])
-    
-    # Perform sentiment analysis and snippet extraction
-    analysis = analyze_sentiment(full_text)
-    snippets = extract_snippets(full_text)
-    
-    # Generate summary
-    summary = generate_summary(full_text)
-    
-    # Create a new Testimonial object
-    testimonial = Testimonial(
-        questions='\n'.join(questions),
-        responses='\n'.join(responses),
-        sentiment=analysis['sentiment'],
-        score=analysis['score'],
-        snippets=', '.join(snippets),
-        summary=summary
-    )
-    
-    # Add the new testimonial to the database
-    db.session.add(testimonial)
-    db.session.commit()
-    
-    return jsonify({'status': 'success', 'redirect': url_for('confirmation')})
-
 @app.route('/send_testimonial_request', methods=['POST'])
 @login_required
 def send_testimonial_request():
@@ -217,6 +231,33 @@ def send_testimonial_request():
     
     return redirect(url_for('dashboard'))
 
+@app.route('/get_business_profile', methods=['GET'])
+def get_business_profile():
+    profile = BusinessProfile.query.first()
+    if profile:
+        return jsonify({
+            'business_name': profile.business_name,
+            'business_description': profile.business_description,
+            'testimonial_guidance': profile.testimonial_guidance
+        })
+    else:
+        return jsonify({})
+
+@app.route('/get_next_question', methods=['POST'])
+def get_next_question():
+    data = request.json
+    conversation_history = data['conversation_history']
+    
+    profile = BusinessProfile.query.first()
+    next_question = generate_follow_up_question(conversation_history, profile)
+    
+    return jsonify({'question': next_question})
+
+@app.route('/confirmation')
+def confirmation():
+    return render_template('confirmation.html')
+
+# Helper functions
 def generate_summary(conversation):
     prompt = f"""
     Summarize the following customer testimonial conversation in a way that sounds like it was written by the customer. 
@@ -239,61 +280,6 @@ def generate_summary(conversation):
     )
 
     return response.choices[0].message.content.strip()
-
-@app.route('/confirmation')
-def confirmation():
-    return render_template('confirmation.html')
-
-@app.route('/dashboard')
-@login_required
-def dashboard():
-    testimonials = Testimonial.query.all()
-    testimonial_requests = TestimonialRequest.query.filter_by(user_id=current_user.id).all()
-    return render_template('dashboard.html', testimonials=testimonials, testimonial_requests=testimonial_requests, zip=zip)
-
-@app.route('/profile', methods=['GET', 'POST'])
-@login_required
-def profile():
-    profile = BusinessProfile.query.filter_by(user_id=current_user.id).first()
-    if request.method == 'POST':
-        if profile:
-            profile.business_name = request.form['business_name']
-            profile.business_description = request.form['business_description']
-            profile.testimonial_guidance = request.form['testimonial_guidance']
-        else:
-            profile = BusinessProfile(
-                business_name=request.form['business_name'],
-                business_description=request.form['business_description'],
-                testimonial_guidance=request.form['testimonial_guidance'],
-                user_id=current_user.id
-            )
-            db.session.add(profile)
-        db.session.commit()
-        flash('Profile updated successfully.', 'success')
-        return redirect(url_for('dashboard'))
-    return render_template('profile.html', profile=profile)
-
-@app.route('/get_business_profile', methods=['GET'])
-def get_business_profile():
-    profile = BusinessProfile.query.first()
-    if profile:
-        return jsonify({
-            'business_name': profile.business_name,
-            'business_description': profile.business_description,
-            'testimonial_guidance': profile.testimonial_guidance
-        })
-    else:
-        return jsonify({})
-
-@app.route('/get_next_question', methods=['POST'])
-def get_next_question():
-    data = request.json
-    conversation_history = data['conversation_history']
-    
-    profile = BusinessProfile.query.first()
-    next_question = generate_follow_up_question(conversation_history, profile)
-    
-    return jsonify({'question': next_question})
 
 def generate_follow_up_question(conversation_history, profile):
     if profile:
