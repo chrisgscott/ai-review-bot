@@ -208,7 +208,9 @@ def submit_testimonial_by_link(unique_id):
         
         return jsonify({'status': 'success', 'redirect': url_for('confirmation')})
     
-    return render_template('submit_testimonial.html', first_name=testimonial_request.first_name)
+    return render_template('submit_testimonial.html', 
+                           first_name=testimonial_request.first_name,
+                           email=testimonial_request.email)
 
 @app.route('/submit_testimonial', methods=['POST'])
 def submit_testimonial():

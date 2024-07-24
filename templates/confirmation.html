@@ -1,16 +1,11 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Thank You for Your Testimonial</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-</head>
-<body>
-    <div class="container">
-        <h1>Thank You!</h1>
-        <p>Your testimonial has been successfully submitted. We appreciate your feedback!</p>
-        <a href="/" class="button">Submit Another Testimonial</a>
-    </div>
-</body>
-</html>
+{% extends "base_public.html" %}
+
+{% block title %}Testimonial Submitted{% endblock %}
+
+{% block content %}
+<div class="text-center">
+    <h1 class="text-3xl font-bold mb-6">Thank You!</h1>
+    <p class="mb-6">Your testimonial has been successfully submitted. We appreciate your feedback!</p>
+    <a href="{{ url_for('index') }}" class="btn btn-primary">Back to Home</a>
+</div>
+{% endblock %}

@@ -1,33 +1,31 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-</head>
-<body>
-    <div class="container">
-        <h1>Login</h1>
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="alert alert-{{ category }}">{{ message }}</div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
-        <form method="POST">
-            <div class="form-group">
-                <label for="username">Username:</label>
-                <input type="text" id="username" name="username" required>
-            </div>
-            <div class="form-group">
-                <label for="password">Password:</label>
-                <input type="password" id="password" name="password" required>
-            </div>
-            <button type="submit">Login</button>
-        </form>
-        <p>Don't have an account? <a href="{{ url_for('register') }}">Register here</a></p>
-    </div>
-</body>
-</html>
+{% extends "base_public.html" %}
+
+{% block title %}Login{% endblock %}
+
+{% block content %}
+<div class="max-w-md mx-auto">
+    <h1 class="text-3xl font-bold mb-6 text-center">Login</h1>
+    <form method="POST" class="bg-base-200 shadow-md rounded px-8 pt-6 pb-8 mb-4">
+        <div class="mb-4">
+            <label class="block text-sm font-bold mb-2" for="username">
+                Username
+            </label>
+            <input class="input input-bordered w-full" id="username" name="username" type="text" placeholder="Username" required>
+        </div>
+        <div class="mb-6">
+            <label class="block text-sm font-bold mb-2" for="password">
+                Password
+            </label>
+            <input class="input input-bordered w-full" id="password" name="password" type="password" placeholder="******************" required>
+        </div>
+        <div class="flex items-center justify-between">
+            <button class="btn btn-primary" type="submit">
+                Sign In
+            </button>
+            <a class="inline-block align-baseline font-bold text-sm text-blue-500 hover:text-blue-800" href="{{ url_for('register') }}">
+                Register
+            </a>
+        </div>
+    </form>
+</div>
+{% endblock %}

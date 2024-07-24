@@ -1,32 +1,27 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Submit Your Testimonial</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-</head>
-<body>
-    <div class="container">
-        <h1>Submit Your Testimonial</h1>
-        <p>Hello {{ first_name }}, we appreciate you taking the time to provide a testimonial.</p>
-        <div id="chatbot">
-            <div id="messages"></div>
-            <div id="input-area">
-                <input type="text" id="user-input" placeholder="Type your response here...">
-                <button onclick="sendMessage()">Send</button>
-            </div>
-            <div id="action-buttons" style="display: none;">
-                <button onclick="getNextQuestion()">Continue Chatting</button>
-            </div>
-            <button id="submit-testimonial" style="display: none;">Submit Testimonial</button>
-        </div>
+{% extends "base_public.html" %}
+
+{% block title %}Submit Your Testimonial{% endblock %}
+
+{% block content %}
+<h1 class="text-3xl font-bold mb-6 text-center">Submit Your Testimonial</h1>
+<div id="chatbot" class="bg-base-200 rounded-lg shadow-lg p-6">
+    <div id="messages" class="mb-4 h-64 overflow-y-auto"></div>
+    <div id="input-area" class="flex mb-4">
+        <input type="text" id="user-input" placeholder="Type your response here..." class="input input-bordered flex-grow mr-2">
+        <button onclick="sendMessage()" class="btn btn-primary">Send</button>
     </div>
-    <script src="{{ url_for('static', filename='chatbot.js') }}"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            initializeChatbot(window.location.href);
-        });
-    </script>
-</body>
-</html>
+    <div id="action-buttons" class="hidden mb-4">
+        <button onclick="getNextQuestion()" class="btn btn-secondary w-full">Continue Chatting</button>
+    </div>
+    <button id="submit-testimonial" class="btn btn-accent w-full hidden">Submit Testimonial</button>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='chatbot.js') }}"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        initializeChatbot("{{ first_name }}", "{{ email }}");
+    });
+</script>
+{% endblock %}
