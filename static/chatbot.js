@@ -58,7 +58,7 @@ function addMessage(message, isBot = false) {
     const messageDiv = document.createElement('div');
     messageDiv.className = isBot ? 'chat chat-start' : 'chat chat-end';
     const bubbleDiv = document.createElement('div');
-    bubbleDiv.className = 'chat-bubble chat-bubble-info' + (isBot ? '' : ' chat-bubble-warning');
+    bubbleDiv.className = 'chat-bubble chat-bubble-accent' + (isBot ? '' : ' chat-bubble-secondary');
     bubbleDiv.textContent = message;
     messageDiv.appendChild(bubbleDiv);
     document.getElementById('messages').appendChild(messageDiv);
@@ -69,7 +69,7 @@ function addTypingIndicator() {
     const typingDiv = document.createElement('div');
     typingDiv.className = 'chat chat-start';
     const bubbleDiv = document.createElement('div');
-    bubbleDiv.className = 'chat-bubble chat-bubble-info typing-indicator';
+    bubbleDiv.className = 'chat-bubble chat-bubble-accent typing-indicator';
     bubbleDiv.innerHTML = '<span></span><span></span><span></span>';
     typingDiv.appendChild(bubbleDiv);
     document.getElementById('messages').appendChild(typingDiv);
