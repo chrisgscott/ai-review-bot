@@ -48,9 +48,21 @@
 
 <script>
     function resendRequest(id) {
-        // Implement the resend functionality here
-        console.log(`Resend request for ID: ${id}`);
-        // You might want to make an AJAX call to your backend here
+        fetch(`/resend_request/${id}`, {
+            method: 'POST',
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                alert('Testimonial request resent successfully!');
+            } else {
+                alert('Error resending testimonial request. Please try again.');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error resending testimonial request. Please try again.');
+        });
     }
 </script>
 {% endblock %}

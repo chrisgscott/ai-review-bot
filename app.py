@@ -10,6 +10,7 @@ import sib_api_v3_sdk
 from sib_api_v3_sdk.rest import ApiException
 from dotenv import load_dotenv
 import os
+from datetime import datetime
 
 # Load environment variables from .env file
 load_dotenv()
@@ -45,12 +46,15 @@ class User(UserMixin, db.Model):
 
 class Testimonial(db.Model):
     id = db.Column(db.Integer, primary_key=True)
+    reviewer_name = db.Column(db.String(100), nullable=True)
+    reviewer_email = db.Column(db.String(120), nullable=True)
     questions = db.Column(db.Text, nullable=False)
     responses = db.Column(db.Text, nullable=False)
     sentiment = db.Column(db.String(20), nullable=False)
     score = db.Column(db.Float, nullable=False)
     snippets = db.Column(db.Text, nullable=False)
     summary = db.Column(db.Text, nullable=True)
+    submitted_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 class BusinessProfile(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -188,6 +192,8 @@ def submit_testimonial_by_link(unique_id):
         summary = generate_summary(full_text)
         
         testimonial = Testimonial(
+            reviewer_name=testimonial_request.first_name,
+            reviewer_email=testimonial_request.email,
             questions='\n'.join(questions),
             responses='\n'.join(responses),
             sentiment=analysis['sentiment'],
@@ -203,6 +209,42 @@ def submit_testimonial_by_link(unique_id):
         return jsonify({'status': 'success', 'redirect': url_for('confirmation')})
     
     return render_template('submit_testimonial.html', first_name=testimonial_request.first_name)
+
+@app.route('/submit_testimonial', methods=['POST'])
+def submit_testimonial():
+    data = request.json
+    questions = data['questions']
+    responses = data['responses']
+    first_name = data.get('firstName')
+    email = data.get('email')
+    
+    # Combine questions and responses for analysis
+    full_text = " ".join([f"Q: {q} A: {r}" for q, r in zip(questions, responses)])
+    
+    # Perform sentiment analysis and snippet extraction
+    analysis = analyze_sentiment(full_text)
+    snippets = extract_snippets(full_text)
+    
+    # Generate summary
+    summary = generate_summary(full_text)
+    
+    # Create a new Testimonial object
+    testimonial = Testimonial(
+        reviewer_name=first_name,
+        reviewer_email=email,
+        questions='\n'.join(questions),
+        responses='\n'.join(responses),
+        sentiment=analysis['sentiment'],
+        score=analysis['score'],
+        snippets=', '.join(snippets),
+        summary=summary
+    )
+    
+    # Add the new testimonial to the database
+    db.session.add(testimonial)
+    db.session.commit()
+    
+    return jsonify({'status': 'success', 'redirect': url_for('confirmation')})
 
 @app.route('/send_testimonial_request', methods=['POST'])
 @login_required
@@ -240,6 +282,36 @@ def send_testimonial_request():
     
     return redirect(url_for('dashboard'))
 
+@app.route('/resend_request/<int:id>', methods=['POST'])
+@login_required
+def resend_request(id):
+    testimonial_request = TestimonialRequest.query.get_or_404(id)
+    
+    # Generate a new unique_id for the request
+    testimonial_request.unique_id = str(uuid.uuid4())
+    db.session.commit()
+
+    # Generate the testimonial link
+    testimonial_link = url_for('submit_testimonial_by_link', unique_id=testimonial_request.unique_id, _external=True)
+    
+    # Prepare email content
+    send_smtp_email = sib_api_v3_sdk.SendSmtpEmail(
+        to=[{"email": testimonial_request.email, "name": testimonial_request.first_name}],
+        template_id=1,  # Make sure this is the correct template ID
+        params={
+            "first_name": testimonial_request.first_name,
+            "testimonial_link": testimonial_link
+        }
+    )
+
+    try:
+        # Send email using Brevo
+        api_response = api_instance.send_transac_email(send_smtp_email)
+        return jsonify({'status': 'success'})
+    except ApiException as e:
+        print(f"Exception when calling SMTPApi->send_transac_email: {e}")
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
 @app.route('/get_business_profile', methods=['GET'])
 def get_business_profile():
     profile = BusinessProfile.query.first()
@@ -265,6 +337,20 @@ def get_next_question():
 @app.route('/confirmation')
 def confirmation():
     return render_template('confirmation.html')
+
+@app.route('/delete_testimonial/<int:id>', methods=['POST'])
+@login_required
+def delete_testimonial(id):
+    testimonial = Testimonial.query.get_or_404(id)
+    db.session.delete(testimonial)
+    db.session.commit()
+    return jsonify({'status': 'success'})
+
+@app.route('/testimonial/<int:id>')
+@login_required
+def testimonial_detail(id):
+    testimonial = Testimonial.query.get_or_404(id)
+    return render_template('testimonial_detail.html', testimonial=testimonial, zip=zip)
 
 # Helper functions
 def generate_summary(conversation):
@@ -350,7 +436,10 @@ def analyze_sentiment(text):
     else:
         score = 0.5
     
-    return {'sentiment': 'Positive' if score > 0.5 else 'Negative', 'score': score}
+    # Convert the score to a 1-10 scale
+    score_1_10 = round(score * 9 + 1, 1)
+    
+    return {'sentiment': 'Positive' if score > 0.5 else 'Negative', 'score': score_1_10}
 
 def extract_snippets(text):
     response = client.chat.completions.create(

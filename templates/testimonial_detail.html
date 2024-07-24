@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %}Testimonial Detail{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold mb-6">Testimonial Detail</h1>
+    <div class="bg-base-100 shadow-xl rounded-lg p-6">
+        <h2 class="text-2xl font-semibold mb-4">
+            {% if testimonial.reviewer_name and testimonial.reviewer_email %}
+                {{ testimonial.reviewer_name }} - {{ testimonial.reviewer_email }}
+            {% else %}
+                Testimonial #{{ testimonial.id }}
+            {% endif %}
+        </h2>
+        <p class="mb-4"><strong>Date Submitted:</strong> {{ testimonial.submitted_at.strftime('%Y-%m-%d %H:%M:%S') }}</p>
+        <div class="mb-4">
+            <p><strong>Sentiment:</strong> {{ testimonial.sentiment }}</p>
+            <progress class="progress progress-primary w-full" value="{{ testimonial.score }}" max="10"></progress>
+            <p class="text-sm text-right">{{ testimonial.score }}/10</p>
+        </div>
+        <div class="mb-4">
+            <h3 class="text-xl font-semibold mb-2">Summary</h3>
+            <p>{{ testimonial.summary }}</p>
+        </div>
+        <div class="mb-4">
+            <h3 class="text-xl font-semibold mb-2">Snippets</h3>
+            <ul class="list-disc list-inside">
+                {% for snippet in testimonial.snippets.split(', ') %}
+                    <li>{{ snippet }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        <div class="mb-4">
+            <h3 class="text-xl font-semibold mb-2">Full Chat Transcript</h3>
+            {% set questions = testimonial.questions.split('\n') %}
+            {% set responses = testimonial.responses.split('\n') %}
+            {% for i in range(questions|length) %}
+                <div class="mb-2">
+                    <p><strong>Q:</strong> {{ questions[i] }}</p>
+                    {% if i < responses|length %}
+                        <p><strong>A:</strong> {{ responses[i] }}</p>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+    <div class="mt-6">
+        <a href="{{ url_for('all_testimonials') }}" class="btn btn-primary">Back to All Testimonials</a>
+    </div>
+</div>
+{% endblock %}
