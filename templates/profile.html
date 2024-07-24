@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Business Profile</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Business Profile</h1>
+        <form method="POST">
+            <div class="form-group">
+                <label for="business_name">Business Name:</label>
+                <input type="text" id="business_name" name="business_name" value="{{ profile.business_name if profile else '' }}" required>
+            </div>
+            <div class="form-group">
+                <label for="business_description">Business Description:</label>
+                <textarea id="business_description" name="business_description" required>{{ profile.business_description if profile else '' }}</textarea>
+            </div>
+            <div class="form-group">
+                <label for="testimonial_guidance">Testimonial Guidance:</label>
+                <textarea id="testimonial_guidance" name="testimonial_guidance" placeholder="E.g., I'd like testimonials that highlight the quality of my products" or "Please collect testimonials that talk about how I compare to competitors."" required>{{ profile.testimonial_guidance if profile else '' }}</textarea>
+            </div>
+            <button type="submit">Save Profile</button>
+        </form>
+        <a href="{{ url_for('dashboard') }}" class="button">Back to Dashboard</a>
+    </div>
+</body>
+</html>

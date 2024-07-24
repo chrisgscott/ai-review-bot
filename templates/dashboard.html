@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Review Bot Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Review Bot Dashboard</h1>
+        <p>Welcome, {{ current_user.username }}! <a href="{{ url_for('logout') }}">Logout</a></p>
+        <a href="{{ url_for('profile') }}" class="button">Edit Business Profile</a>
+        
+        <h2>Request Testimonial</h2>
+        <form action="{{ url_for('send_testimonial_request') }}" method="POST">
+            <div class="form-group">
+                <label for="email">Email:</label>
+                <input type="email" id="email" name="email" required>
+            </div>
+            <div class="form-group">
+                <label for="first_name">First Name:</label>
+                <input type="text" id="first_name" name="first_name" required>
+            </div>
+            <button type="submit">Send Request</button>
+        </form>
+        
+        <h2>Pending Testimonial Requests</h2>
+        <ul>
+            {% for request in testimonial_requests %}
+                <li>
+                    {{ request.first_name }} ({{ request.email }})
+                    {% if request.submitted %}
+                        - Submitted
+                    {% else %}
+                        - Pending
+                    {% endif %}
+                </li>
+            {% endfor %}
+        </ul>
+        
+        <h2>Submitted Testimonials</h2>
+        <div id="testimonials">
+            {% if testimonials %}
+                {% for testimonial in testimonials %}
+                    <div class="testimonial">
+                        <h3>Testimonial #{{ testimonial.id }}</h3>
+                        <div class="conversation">
+                            {% for question, response in zip(testimonial.questions.split('\n'), testimonial.responses.split('\n')) %}
+                                <div class="qa-pair">
+                                    <p class="question"><strong>Q:</strong> {{ question }}</p>
+                                    <p class="response"><strong>A:</strong> {{ response }}</p>
+                                </div>
+                            {% endfor %}
+                        </div>
+                        <h4>Sentiment: {{ testimonial.sentiment }} ({{ testimonial.score }})</h4>
+                        <h4>Snippets:</h4>
+                        <ul>
+                            {% for snippet in testimonial.snippets.split(', ') %}
+                                <li>{{ snippet }}</li>
+                            {% endfor %}
+                        </ul>
+                        <h4>Summary:</h4>
+                        <div class="summary">
+                            <p>{{ testimonial.summary }}</p>
+                            <button onclick="copyToClipboard(this)" data-summary="{{ testimonial.summary }}">Copy Summary</button>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <p>No testimonials have been submitted yet.</p>
+            {% endif %}
+        </div>
+    </div>
+    <script>
+        function copyToClipboard(button) {
+            const summary = button.getAttribute('data-summary');
+            navigator.clipboard.writeText(summary).then(() => {
+                const originalText = button.textContent;
+                button.textContent = 'Copied!';
+                setTimeout(() => {
+                    button.textContent = originalText;
+                }, 2000);
+            });
+        }
+    </script>
+</body>
+</html>

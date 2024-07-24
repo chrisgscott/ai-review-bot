@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Review Bot</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Share Your Experience</h1>
+        <div id="chatbot">
+            <div id="messages"></div>
+            <div id="input-area">
+                <input type="text" id="user-input" placeholder="Type your response here...">
+                <button onclick="sendMessage()">Send</button>
+            </div>
+            <div id="action-buttons" style="display: none;">
+                <button onclick="getNextQuestion()">Continue Chatting</button>
+            </div>
+            <button id="submit-testimonial" style="display: none;">Submit Testimonial</button>
+        </div>
+    </div>
+    <script src="{{ url_for('static', filename='chatbot.js') }}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeChatbot("{{ url_for('submit_testimonial') }}");
+        });
+    </script>
+</body>
+</html>
