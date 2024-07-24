@@ -1,7 +1,13 @@
 module.exports = {
-  content: ["./templates/**/*.html", "./static/js/**/*.js"],
+  content: [
+    "./templates/**/*.html",
+    "./static/**/*.js",
+  ],
   theme: {
     extend: {},
   },
-  plugins: [],
+  plugins: [require("daisyui")],
+  daisyui: {
+    themes: ["winter", "dark"], // You can add more themes or use just one
+  },
 }

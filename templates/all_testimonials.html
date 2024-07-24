@@ -3,16 +3,41 @@
 {% block title %}All Testimonials{% endblock %}
 
 {% block content %}
-<h1 class="text-2xl font-bold mb-4">All Testimonials</h1>
-<div class="space-y-4">
-    {% for testimonial in testimonials %}
-        <div class="bg-white p-4 rounded shadow">
-            <h3 class="font-bold">Testimonial #{{ testimonial.id }}</h3>
-            <p>{{ testimonial.summary }}</p>
-            <p class="text-sm text-gray-500">Sentiment: {{ testimonial.sentiment }} ({{ testimonial.score }})</p>
+<div class="container mx-auto px-4">
+    <h1 class="text-3xl font-bold mb-6">All Testimonials</h1>
+    
+    {% if testimonials %}
+        <div class="space-y-6">
+            {% for testimonial in testimonials %}
+                <div class="card bg-base-100 shadow-xl">
+                    <div class="card-body">
+                        <h2 class="card-title">Testimonial #{{ testimonial.id }}</h2>
+                        <p class="text-sm text-base-content text-opacity-70">Sentiment: {{ testimonial.sentiment }} ({{ testimonial.score }})</p>
+                        <p class="mt-2">{{ testimonial.summary }}</p>
+                        <div class="card-actions justify-end mt-4">
+                            <button class="btn btn-primary btn-sm" onclick="toggleSnippets({{ testimonial.id }})">Show Snippets</button>
+                        </div>
+                        <div id="snippets-{{ testimonial.id }}" class="hidden mt-4">
+                            <h3 class="font-bold mb-2">Snippets:</h3>
+                            <ul class="list-disc list-inside">
+                                {% for snippet in testimonial.snippets.split(', ') %}
+                                    <li>{{ snippet }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
         </div>
     {% else %}
-        <p>No testimonials submitted yet.</p>
-    {% endfor %}
+        <p class="text-center text-lg">No testimonials submitted yet.</p>
+    {% endif %}
 </div>
+
+<script>
+    function toggleSnippets(id) {
+        const snippetsDiv = document.getElementById(`snippets-${id}`);
+        snippetsDiv.classList.toggle('hidden');
+    }
+</script>
 {% endblock %}

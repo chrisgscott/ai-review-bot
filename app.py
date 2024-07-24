@@ -118,7 +118,16 @@ def logout():
 @app.route('/dashboard')
 @login_required
 def dashboard():
-    return render_template('dashboard.html')
+    total_testimonials = Testimonial.query.count()
+    pending_requests = TestimonialRequest.query.filter_by(submitted=False).count()
+    average_sentiment = db.session.query(db.func.avg(Testimonial.score)).scalar() or 0
+    recent_testimonials = Testimonial.query.order_by(Testimonial.id.desc()).limit(5).all()
+    
+    return render_template('dashboard.html', 
+                           total_testimonials=total_testimonials,
+                           pending_requests=pending_requests,
+                           average_sentiment=average_sentiment,
+                           recent_testimonials=recent_testimonials)
 
 @app.route('/new_testimonial')
 @login_required

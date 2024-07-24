@@ -3,19 +3,54 @@
 {% block title %}Pending Requests{% endblock %}
 
 {% block content %}
-<h1 class="text-2xl font-bold mb-4">Pending Testimonial Requests</h1>
-<ul class="space-y-2">
-    {% for request in requests %}
-        <li class="bg-white p-4 rounded shadow">
-            {{ request.first_name }} ({{ request.email }})
-            {% if request.submitted %}
-                - <span class="text-green-500">Submitted</span>
-            {% else %}
-                - <span class="text-yellow-500">Pending</span>
-            {% endif %}
-        </li>
+<div class="container mx-auto px-4">
+    <h1 class="text-3xl font-bold mb-6">Pending Testimonial Requests</h1>
+    
+    {% if requests %}
+        <div class="overflow-x-auto">
+            <table class="table w-full">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for request in requests %}
+                        <tr>
+                            <td>{{ request.id }}</td>
+                            <td>{{ request.first_name }}</td>
+                            <td>{{ request.email }}</td>
+                            <td>
+                                {% if request.submitted %}
+                                    <span class="badge badge-success">Submitted</span>
+                                {% else %}
+                                    <span class="badge badge-warning">Pending</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if not request.submitted %}
+                                    <button class="btn btn-sm btn-primary" onclick="resendRequest({{ request.id }})">Resend</button>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     {% else %}
-        <li>No pending requests.</li>
-    {% endfor %}
-</ul>
+        <p class="text-center text-lg">No pending requests.</p>
+    {% endif %}
+</div>
+
+<script>
+    function resendRequest(id) {
+        // Implement the resend functionality here
+        console.log(`Resend request for ID: ${id}`);
+        // You might want to make an AJAX call to your backend here
+    }
+</script>
 {% endblock %}

@@ -3,6 +3,56 @@
 {% block title %}Dashboard{% endblock %}
 
 {% block content %}
-<h1 class="text-2xl font-bold mb-4">Welcome to your dashboard</h1>
-<!-- Add any dashboard-specific content here -->
+<div class="container mx-auto px-4">
+    <h1 class="text-3xl font-bold mb-6">Dashboard</h1>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div class="card bg-base-100 shadow-xl">
+            <div class="card-body">
+                <h2 class="card-title">Total Testimonials</h2>
+                <p class="text-4xl font-bold">{{ total_testimonials }}</p>
+            </div>
+        </div>
+        
+        <div class="card bg-base-100 shadow-xl">
+            <div class="card-body">
+                <h2 class="card-title">Pending Requests</h2>
+                <p class="text-4xl font-bold">{{ pending_requests }}</p>
+            </div>
+        </div>
+        
+        <div class="card bg-base-100 shadow-xl">
+            <div class="card-body">
+                <h2 class="card-title">Average Sentiment</h2>
+                <p class="text-4xl font-bold">{{ average_sentiment | round(2) }}</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="mt-8">
+        <h2 class="text-2xl font-bold mb-4">Recent Testimonials</h2>
+        <div class="overflow-x-auto">
+            <table class="table w-full">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Summary</th>
+                        <th>Sentiment</th>
+                        <th>Score</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for testimonial in recent_testimonials %}
+                    <tr>
+                        <td>{{ testimonial.id }}</td>
+                        <td>{{ testimonial.summary[:100] }}...</td>
+                        <td>{{ testimonial.sentiment }}</td>
+                        <td>{{ testimonial.score }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
 {% endblock %}
