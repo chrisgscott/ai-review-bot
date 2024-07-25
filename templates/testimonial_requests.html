@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% block title %}Testimonial Requests{% endblock %}
+{% block content %}
+
+<div class="container mx-auto px-4">
+    <h1 class="text-3xl font-bold mb-6">Testimonial Requests</h1>
+
+    <!-- New Testimonial Request Form -->
+    <div class="card bg-base-100 shadow-xl mb-6">
+        <div class="card-body">
+            <h2 class="card-title mb-4">Send New Testimonial Request</h2>
+            <form id="newRequestForm" class="flex items-end space-x-4">
+                <div class="form-control flex-grow">
+                    <label for="email" class="label">
+                        <span class="label-text">Client Email</span>
+                    </label>
+                    <input type="email" id="email" name="email" required class="input input-bordered w-full" placeholder="customer@example.com">
+                </div>
+                <div class="form-control flex-grow">
+                    <label for="first_name" class="label">
+                        <span class="label-text">Client First Name</span>
+                    </label>
+                    <input type="text" id="first_name" name="first_name" required class="input input-bordered w-full" placeholder="John">
+                </div>
+                <button type="submit" class="btn btn-primary">Send a Request for a Testimonial</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Pending Requests -->
+    <div class="card bg-base-100 shadow-xl">
+        <div class="card-body">
+            <h2 class="card-title mb-4">Pending Requests</h2>
+            <div id="pendingRequestsList">
+                {% if requests %}
+                    <div class="overflow-x-auto">
+                        <table class="table w-full">
+                            <thead>
+                                <tr>
+                                    <th>Email</th>
+                                    <th>First Name</th>
+                                    <th>Date Sent</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for request in requests %}
+                                    <tr>
+                                        <td>{{ request.email }}</td>
+                                        <td>{{ request.first_name }}</td>
+                                        <td>{{ request.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                                        <td>
+                                            <button onclick="resendRequest({{ request.id }})" class="btn btn-sm btn-secondary">Resend</button>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p>No pending requests.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('newRequestForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+
+    fetch('{{ url_for("send_testimonial_request") }}', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            alert(data.message);
+            // Refresh the page to show the updated list
+            location.reload();
+        } else {
+            alert(data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred. Please try again.');
+    });
+});
+
+function resendRequest(requestId) {
+    fetch(`/resend_request/${requestId}`, {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            alert('Request resent successfully!');
+        } else {
+            alert('Error resending request: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred. Please try again.');
+    });
+}
+</script>
+
+{% endblock %}

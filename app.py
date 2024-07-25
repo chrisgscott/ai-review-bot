@@ -382,10 +382,31 @@ def profile():
                 user_id=current_user.id
             )
             db.session.add(profile)
+        
+        # Update custom URL
         current_user.custom_url = request.form['custom_url']
+        
+        # Update email
+        new_email = request.form['email']
+        if new_email != current_user.email:
+            if User.query.filter_by(email=new_email).first():
+                flash('Email already exists.', 'danger')
+                return redirect(url_for('profile'))
+            current_user.email = new_email
+        
+        # Update password if provided
+        new_password = request.form['new_password']
+        if new_password:
+            if new_password == request.form['confirm_password']:
+                current_user.password = bcrypt.generate_password_hash(new_password).decode('utf-8')
+            else:
+                flash('Passwords do not match.', 'danger')
+                return redirect(url_for('profile'))
+        
         db.session.commit()
         flash('Profile updated successfully.', 'success')
         return redirect(url_for('profile'))
+    
     return render_template('profile.html', profile=profile)
 
 @app.route('/review/<custom_url>', methods=['GET', 'POST'])
@@ -484,6 +505,13 @@ def submit_testimonial():
         app.logger.error(f"Error in submit_testimonial: {str(e)}")
         return jsonify({'status': 'error', 'message': 'An error occurred while submitting the testimonial'}), 500
 
+@app.route('/testimonial_requests')
+@login_required
+def testimonial_requests():
+    # Get pending requests
+    requests = TestimonialRequest.query.filter_by(user_id=current_user.id, submitted=False).all()
+    return render_template('testimonial_requests.html', requests=requests)
+
 @app.route('/send_testimonial_request', methods=['POST'])
 @login_required
 def send_testimonial_request():
@@ -504,7 +532,7 @@ def send_testimonial_request():
     
     send_smtp_email = sib_api_v3_sdk.SendSmtpEmail(
         to=[{"email": email, "name": first_name}],
-        template_id=1,  # Replace 1 with your actual template ID from Brevo
+        template_id=1,  # Replace with your actual template ID from Brevo
         params={
             "first_name": first_name,
             "testimonial_link": testimonial_link
@@ -513,11 +541,9 @@ def send_testimonial_request():
 
     try:
         api_response = api_instance.send_transac_email(send_smtp_email)
-        flash('Testimonial request sent successfully!', 'success')
+        return jsonify({'status': 'success', 'message': 'Testimonial request sent successfully!'})
     except ApiException as e:
-        flash(f'Error sending testimonial request: {str(e)}', 'error')
-    
-    return redirect(url_for('dashboard'))
+        return jsonify({'status': 'error', 'message': f'Error sending testimonial request: {str(e)}'}), 500
 
 @app.route('/resend_request/<int:id>', methods=['POST'])
 @login_required
@@ -544,6 +570,12 @@ def resend_request(id):
     except ApiException as e:
         print(f"Exception when calling SMTPApi->send_transac_email: {e}")
         return jsonify({'status': 'error', 'message': str(e)}), 500
+    
+@app.route('/pending_requests_list')
+@login_required
+def pending_requests_list():
+    requests = TestimonialRequest.query.filter_by(user_id=current_user.id, submitted=False).all()
+    return render_template('pending_requests_list.html', requests=requests)
 
 @app.route('/get_business_profile', methods=['GET'])
 def get_business_profile():

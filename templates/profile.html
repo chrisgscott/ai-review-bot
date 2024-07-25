@@ -2,35 +2,89 @@
 {% block title %}My Profile{% endblock %}
 {% block content %}
 
-<div class="max-w-2xl mx-auto">
-    <h1 class="text-2xl font-bold mb-6">My Profile</h1>
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold mb-6">My Profile</h1>
+
     <form method="POST" action="{{ url_for('profile') }}">
-        <div class="form-control">
-            <label class="label" for="business_name">
-                <span class="label-text">Business Name</span>
-            </label>
-            <input type="text" id="business_name" name="business_name" value="{{ profile.business_name }}" class="input input-bordered" required>
-        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Left Column -->
+            <div>
+                <!-- Business Details Section -->
+                <div class="card bg-base-100 shadow-xl mb-6">
+                    <div class="card-body">
+                        <h2 class="card-title">Business Details</h2>
+                        <p class="text-sm text-gray-600 mb-4">We'll use this info to personalize the experience for you and your customers.</p>
+                        <div class="form-control">
+                            <label class="label" for="business_name">
+                                <span class="label-text">Business Name</span>
+                            </label>
+                            <input type="text" id="business_name" name="business_name" value="{{ profile.business_name }}" class="input input-bordered" required>
+                        </div>
+                        <div class="form-control mt-4">
+                            <label class="label" for="business_description">
+                                <span class="label-text">Business Description</span>
+                            </label>
+                            <textarea id="business_description" name="business_description" class="textarea textarea-bordered auto-expand" required>{{ profile.business_description }}</textarea>
+                        </div>
+                    </div>
+                </div>
 
-        <div class="form-control">
-            <label class="label" for="business_description">
-                <span class="label-text">Business Description</span>
-            </label>
-            <textarea id="business_description" name="business_description" class="textarea textarea-bordered" required>{{ profile.business_description }}</textarea>
-        </div>
+                <!-- Testimonial Guidance Section -->
+                <div class="card bg-base-100 shadow-xl mb-6">
+                    <div class="card-body">
+                        <h2 class="card-title">Testimonial Guidance</h2>
+                        <p class="text-sm text-gray-600 mb-4">This is where the magic happens! Be specific about the things you want your testimonials to highlight and our AI will guide the conversation in that direction.</p>
+                        <div class="form-control">
+                            <label class="label" for="testimonial_guidance">
+                                <span class="label-text">Guidance for Testimonials</span>
+                            </label>
+                            <textarea id="testimonial_guidance" name="testimonial_guidance" class="textarea textarea-bordered auto-expand" required placeholder="Ex: I want testimonials that highlight the changes my service has made in the lives of my customers. Generate questions that draw out before-and-after stories from my customers.">{{ profile.testimonial_guidance }}</textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-        <div class="form-control">
-            <label class="label" for="testimonial_guidance">
-                <span class="label-text">Testimonial Guidance</span>
-            </label>
-            <textarea id="testimonial_guidance" name="testimonial_guidance" class="textarea textarea-bordered" required>{{ profile.testimonial_guidance }}</textarea>
-        </div>
+            <!-- Right Column -->
+            <div>
+                <!-- Custom Review URL Section -->
+                <div class="card bg-base-100 shadow-xl mb-6">
+                    <div class="card-body">
+                        <h2 class="card-title">Custom Review URL</h2>
+                        <p class="text-sm text-gray-600 mb-4">This is the URL you'll share for customers to leave reviews. You can customize the last part to make it fit your brand.</p>
+                        <div class="form-control">
+                            <div class="flex items-center">
+                                <span class="mr-2">{{ request.host_url }}review/</span>
+                                <input type="text" id="custom_url" name="custom_url" value="{{ current_user.custom_url }}" class="input input-bordered flex-grow" required>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-        <div class="form-control">
-            <label class="label" for="custom_url">
-                <span class="label-text">Custom Review URL</span>
-            </label>
-            <input type="text" id="custom_url" name="custom_url" value="{{ current_user.custom_url }}" class="input input-bordered" required>
+                <!-- Account Management Section -->
+                <div class="card bg-base-100 shadow-xl mb-6">
+                    <div class="card-body">
+                        <h2 class="card-title">Account Management</h2>
+                        <div class="form-control">
+                            <label class="label" for="email">
+                                <span class="label-text">Email Address</span>
+                            </label>
+                            <input type="email" id="email" name="email" value="{{ current_user.email }}" class="input input-bordered" required>
+                        </div>
+                        <div class="form-control mt-4">
+                            <label class="label" for="new_password">
+                                <span class="label-text">New Password (leave blank to keep current password)</span>
+                            </label>
+                            <input type="password" id="new_password" name="new_password" class="input input-bordered">
+                        </div>
+                        <div class="form-control mt-4">
+                            <label class="label" for="confirm_password">
+                                <span class="label-text">Confirm New Password</span>
+                            </label>
+                            <input type="password" id="confirm_password" name="confirm_password" class="input input-bordered">
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <div class="form-control mt-6">
@@ -38,5 +92,30 @@
         </div>
     </form>
 </div>
+
+<style>
+    .auto-expand {
+        min-height: 100px;
+        overflow: hidden;
+        resize: none;
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const autoExpandTextareas = document.querySelectorAll('.auto-expand');
+        
+        autoExpandTextareas.forEach(textarea => {
+            textarea.addEventListener('input', autoExpand);
+            // Initial call to set the height
+            autoExpand.call(textarea);
+        });
+
+        function autoExpand() {
+            this.style.height = 'auto';
+            this.style.height = (this.scrollHeight) + 'px';
+        }
+    });
+</script>
 
 {% endblock %}

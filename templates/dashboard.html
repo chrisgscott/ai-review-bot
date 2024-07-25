@@ -21,7 +21,7 @@
             <h2 class="card-title">Your Custom Review URL</h2>
             <div class="flex items-center">
                 <input type="text" value="{{ url_for('custom_review', custom_url=current_user.custom_url, _external=True) }}" class="input input-bordered flex-grow mr-2" id="custom-url" readonly>
-                <button onclick="copyToClipboard()" class="btn btn-primary mr-2">Copy</button>
+                <button onclick="copyToClipboard()" class="btn btn-primary mr-2" id="copyButton">Copy</button>
                 <a href="{{ url_for('profile') }}" class="btn btn-secondary">Edit</a>
             </div>
         </div>
@@ -77,4 +77,33 @@
     </div>
 </div>
 
+<script>
+    function copyToClipboard() {
+        var copyText = document.getElementById("custom-url");
+        var copyButton = document.getElementById("copyButton");
+        
+        // Select the text
+        copyText.select();
+        copyText.setSelectionRange(0, 99999); // For mobile devices
+        
+        // Copy the text inside the text field
+        navigator.clipboard.writeText(copyText.value).then(function() {
+            // Change button text to "Copied!"
+            copyButton.textContent = "Copied!";
+            
+            // Disable the button temporarily
+            copyButton.disabled = true;
+            
+            // Reset button after 3 seconds
+            setTimeout(function() {
+                copyButton.textContent = "Copy";
+                copyButton.disabled = false;
+            }, 3000);
+        }, function(err) {
+            console.error('Could not copy text: ', err);
+            alert('Failed to copy text. Please try again.');
+        });
+    }
+    </script>
+    
 {% endblock %}

@@ -1,5 +1,5 @@
 let businessProfile = {};
-let initialQuestion = "Hi there! We'd love to hear about your experience with our business. How would you rate it overall?";
+let initialQuestion = "Hi there! We'd love to hear about your experience. How would you rate it overall?";
 const INITIAL_QUESTIONS = 1;
 const FOLLOW_UP_QUESTIONS = 3;
 let currentQuestion = 0;
@@ -24,15 +24,19 @@ function initializeChatbot(firstName = null, email = null) {
         collectingPersonalInfo = false;
     }
 
-    // Fetch business profile and start conversation
-    fetch('/get_business_profile')
-        .then(response => response.json())
-        .then(data => {
-            businessProfile = data;
-            startConversation();
-        });
-
-    document.getElementById('submit-testimonial').addEventListener('click', submitTestimonial);
+    // Check if we're on the custom review page
+    if (typeof businessId !== 'undefined') {
+        collectingPersonalInfo = false;
+        startMainConversation();
+    } else {
+        // Fetch business profile and start conversation
+        fetch('/get_business_profile')
+            .then(response => response.json())
+            .then(data => {
+                businessProfile = data;
+                startConversation();
+            });
+    }
 }
 
 function startConversation() {
@@ -49,7 +53,13 @@ function askPersonalInfoQuestion() {
 }
 
 function startMainConversation() {
-    initialQuestion = `Hi there, ${personalInfo.firstName}! We'd love to hear about your experience with ${businessProfile.business_name || 'our business'}. How would you rate it overall?`;
+    if (typeof businessId !== 'undefined') {
+        // Custom review flow
+        initialQuestion = `Hi there! We'd love to hear about your experience. How would you rate it overall?`;
+    } else {
+        // Original testimonial request flow
+        initialQuestion = `Hi there, ${personalInfo.firstName}! We'd love to hear about your experience with ${businessProfile.business_name || 'our business'}. How would you rate it overall?`;
+    }
     addMessage(initialQuestion, true);
     askedQuestions.push(initialQuestion);
 }
@@ -148,18 +158,24 @@ function submitTestimonial() {
     document.getElementById('submit-testimonial').textContent = 'Submitting...';
     document.getElementById('action-buttons').style.display = 'none';
 
+    const testimonialData = {
+        questions: askedQuestions,
+        responses: responses,
+        firstName: personalInfo.firstName,
+        email: personalInfo.email
+    };
+
+    // Add businessId if it's defined (for custom review flow)
+    if (typeof businessId !== 'undefined') {
+        testimonialData.business_id = businessId;
+    }
+
     fetch('/submit_testimonial', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ 
-            questions: askedQuestions,
-            responses: responses,
-            firstName: personalInfo.firstName,
-            email: personalInfo.email,
-            business_id: businessId  // Add this line
-        }),
+        body: JSON.stringify(testimonialData),
     })
     .then(response => response.json())
     .then(data => {
@@ -182,6 +198,7 @@ function submitTestimonial() {
 }
 
 
-
-// Make sure initializeChatbot is available globally
-window.initializeChatbot = initializeChatbot;
+// Make sure initializeChatbot is called when the page loads
+document.addEventListener('DOMContentLoaded', function() {
+    initializeChatbot();
+});
