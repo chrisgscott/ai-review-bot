@@ -87,14 +87,43 @@ class SecureModelView(ModelView):
         return redirect(url_for('login', next=request.url))
 
 class UserAdminView(SecureModelView):
+    list_template = 'admin/model/custom_list.html'
     column_exclude_list = ['password']
     form_excluded_columns = ['password']
     column_searchable_list = ['username']
     column_filters = ['is_admin']
+    can_create = True
+    can_edit = True
+    can_delete = True
+    
+    def is_accessible(self):
+        return current_user.is_authenticated and current_user.is_admin
+
+    def inaccessible_callback(self, name, **kwargs):
+        return redirect(url_for('login', next=request.url))
 
 class TestimonialAdminView(SecureModelView):
+    list_template = 'admin/model/custom_list.html'
     column_searchable_list = ['reviewer_name', 'reviewer_email', 'summary']
     column_filters = ['sentiment', 'score']
+    can_create = True
+    can_edit = True
+    can_delete = True
+
+class BusinessProfileAdminView(SecureModelView):
+    list_template = 'admin/model/custom_list.html'
+    column_searchable_list = ['business_name']
+    can_create = True
+    can_edit = True
+    can_delete = True
+
+class TestimonialRequestAdminView(SecureModelView):
+    list_template = 'admin/model/custom_list.html'
+    column_searchable_list = ['email', 'first_name']
+    column_filters = ['submitted']
+    can_create = True
+    can_edit = True
+    can_delete = True
 
 class DashboardView(BaseView):
     @expose('/')
@@ -105,14 +134,14 @@ class DashboardView(BaseView):
         return self.render('admin/dashboard.html', total_users=total_users, 
                            total_testimonials=total_testimonials, avg_sentiment=avg_sentiment)
 
-# Initialize Flask-Admin
-admin = Admin(app, name='Leave Some Love Admin', template_mode='bootstrap3')
+# Initialize Admin
+admin = Admin(app, name='Leave Some Love Admin', template_mode='bootstrap3', base_template='admin/base.html')
 
 # Add admin views
-admin.add_view(UserAdminView(User, db.session))
-admin.add_view(TestimonialAdminView(Testimonial, db.session))
-admin.add_view(SecureModelView(BusinessProfile, db.session))
-admin.add_view(SecureModelView(TestimonialRequest, db.session))
+admin.add_view(UserAdminView(User, db.session, name='User'))
+admin.add_view(TestimonialAdminView(Testimonial, db.session, name='Testimonial'))
+admin.add_view(BusinessProfileAdminView(BusinessProfile, db.session, name='BusinessProfile'))
+admin.add_view(TestimonialRequestAdminView(TestimonialRequest, db.session, name='TestimonialRequest'))
 admin.add_view(DashboardView(name='Dashboard', endpoint='admin_dashboard'))
 
 @login_manager.user_loader
@@ -175,7 +204,8 @@ def dashboard():
                            total_testimonials=total_testimonials,
                            pending_requests=pending_requests,
                            average_sentiment=average_sentiment,
-                           recent_testimonials=recent_testimonials)
+                           recent_testimonials=recent_testimonials,
+                           current_user=current_user)
 
 @app.route('/new_testimonial')
 @login_required
