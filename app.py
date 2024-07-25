@@ -11,6 +11,12 @@ from sib_api_v3_sdk.rest import ApiException
 from dotenv import load_dotenv
 import os
 from datetime import datetime
+import hashlib
+from flask_admin import Admin
+from flask_admin.contrib.sqla import ModelView
+from flask_admin import BaseView, expose
+import logging
+logging.basicConfig(level=logging.INFO)
 
 # Load environment variables from .env file
 load_dotenv()
@@ -43,6 +49,7 @@ class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
     password = db.Column(db.String(120), nullable=False)
+    is_admin = db.Column(db.Boolean, default=False)
 
 class Testimonial(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -70,6 +77,43 @@ class TestimonialRequest(db.Model):
     unique_id = db.Column(db.String(36), unique=True, nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     submitted = db.Column(db.Boolean, default=False)
+
+# Admin views
+class SecureModelView(ModelView):
+    def is_accessible(self):
+        return current_user.is_authenticated and current_user.is_admin
+
+    def inaccessible_callback(self, name, **kwargs):
+        return redirect(url_for('login', next=request.url))
+
+class UserAdminView(SecureModelView):
+    column_exclude_list = ['password']
+    form_excluded_columns = ['password']
+    column_searchable_list = ['username']
+    column_filters = ['is_admin']
+
+class TestimonialAdminView(SecureModelView):
+    column_searchable_list = ['reviewer_name', 'reviewer_email', 'summary']
+    column_filters = ['sentiment', 'score']
+
+class DashboardView(BaseView):
+    @expose('/')
+    def index(self):
+        total_users = User.query.count()
+        total_testimonials = Testimonial.query.count()
+        avg_sentiment = db.session.query(db.func.avg(Testimonial.score)).scalar() or 0
+        return self.render('admin/dashboard.html', total_users=total_users, 
+                           total_testimonials=total_testimonials, avg_sentiment=avg_sentiment)
+
+# Initialize Flask-Admin
+admin = Admin(app, name='Leave Some Love Admin', template_mode='bootstrap3')
+
+# Add admin views
+admin.add_view(UserAdminView(User, db.session))
+admin.add_view(TestimonialAdminView(Testimonial, db.session))
+admin.add_view(SecureModelView(BusinessProfile, db.session))
+admin.add_view(SecureModelView(TestimonialRequest, db.session))
+admin.add_view(DashboardView(name='Dashboard', endpoint='admin_dashboard'))
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -220,17 +264,12 @@ def submit_testimonial():
     first_name = data.get('firstName')
     email = data.get('email')
     
-    # Combine questions and responses for analysis
     full_text = " ".join([f"Q: {q} A: {r}" for q, r in zip(questions, responses)])
     
-    # Perform sentiment analysis and snippet extraction
     analysis = analyze_sentiment(full_text)
     snippets = extract_snippets(full_text)
-    
-    # Generate summary
     summary = generate_summary(full_text)
     
-    # Create a new Testimonial object
     testimonial = Testimonial(
         reviewer_name=first_name,
         reviewer_email=email,
@@ -242,7 +281,6 @@ def submit_testimonial():
         summary=summary
     )
     
-    # Add the new testimonial to the database
     db.session.add(testimonial)
     db.session.commit()
     
@@ -264,7 +302,6 @@ def send_testimonial_request():
     db.session.add(new_request)
     db.session.commit()
     
-    # Send email using Brevo
     testimonial_link = url_for('submit_testimonial_by_link', unique_id=unique_id, _external=True)
     
     send_smtp_email = sib_api_v3_sdk.SendSmtpEmail(
@@ -289,14 +326,11 @@ def send_testimonial_request():
 def resend_request(id):
     testimonial_request = TestimonialRequest.query.get_or_404(id)
     
-    # Generate a new unique_id for the request
     testimonial_request.unique_id = str(uuid.uuid4())
     db.session.commit()
 
-    # Generate the testimonial link
     testimonial_link = url_for('submit_testimonial_by_link', unique_id=testimonial_request.unique_id, _external=True)
     
-    # Prepare email content
     send_smtp_email = sib_api_v3_sdk.SendSmtpEmail(
         to=[{"email": testimonial_request.email, "name": testimonial_request.first_name}],
         template_id=1,  # Make sure this is the correct template ID
@@ -307,7 +341,6 @@ def resend_request(id):
     )
 
     try:
-        # Send email using Brevo
         api_response = api_instance.send_transac_email(send_smtp_email)
         return jsonify({'status': 'success'})
     except ApiException as e:
@@ -316,15 +349,19 @@ def resend_request(id):
 
 @app.route('/get_business_profile', methods=['GET'])
 def get_business_profile():
-    profile = BusinessProfile.query.first()
-    if profile:
-        return jsonify({
-            'business_name': profile.business_name,
-            'business_description': profile.business_description,
-            'testimonial_guidance': profile.testimonial_guidance
-        })
-    else:
-        return jsonify({})
+    try:
+        profile = BusinessProfile.query.first()
+        if profile:
+            return jsonify({
+                'business_name': profile.business_name,
+                'business_description': profile.business_description,
+                'testimonial_guidance': profile.testimonial_guidance
+            }), 200
+        else:
+            return jsonify({'message': 'No business profile found'}), 404
+    except Exception as e:
+        app.logger.error(f"Error in get_business_profile: {str(e)}")
+        return jsonify({'error': 'An error occurred while fetching the business profile'}), 500
 
 @app.route('/get_next_question', methods=['POST'])
 def get_next_question():
@@ -352,9 +389,29 @@ def delete_testimonial(id):
 @login_required
 def testimonial_detail(id):
     testimonial = Testimonial.query.get_or_404(id)
-    return render_template('testimonial_detail.html', testimonial=testimonial, zip=zip)
+    gravatar_url = get_gravatar_url(testimonial.reviewer_email) if testimonial.reviewer_email else None
+    return render_template('testimonial_detail.html', testimonial=testimonial, gravatar_url=gravatar_url, zip=zip)
+
+@app.route('/make_admin/<int:user_id>')
+@login_required
+def make_admin(user_id):
+    if not current_user.is_admin:
+        flash('You do not have permission to perform this action.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    user = User.query.get_or_404(user_id)
+    user.is_admin = True
+    db.session.commit()
+    flash(f'User {user.username} is now an admin.', 'success')
+    return redirect(url_for('admin.index'))
 
 # Helper functions
+def get_gravatar_url(email, size=100):
+    """Generate Gravatar URL for the given email."""
+    email = email.lower().encode('utf-8')
+    email_hash = hashlib.md5(email).hexdigest()
+    return f"https://www.gravatar.com/avatar/{email_hash}?s={size}&d=identicon"
+
 def generate_summary(conversation):
     prompt = f"""
     Summarize the following customer testimonial conversation in a way that sounds like it was written by the customer. 
