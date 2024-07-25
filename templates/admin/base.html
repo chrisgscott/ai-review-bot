@@ -4,17 +4,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Leave Some Love Admin{% endblock %}</title>
+    <title>{% block title %}Admin - Leave Some Love{% endblock %}</title>
     <link href="https://cdn.jsdelivr.net/npm/daisyui@3.9.0/dist/full.css" rel="stylesheet" type="text/css" />
     <script src="https://cdn.tailwindcss.com"></script>
-    {% block head_css %}{% endblock %}
-    {% block head %}{% endblock %}
+    {% block extra_css %}{% endblock %}
 </head>
 <body>
     <div class="drawer lg:drawer-open">
         <input id="my-drawer-2" type="checkbox" class="drawer-toggle" />
         <div class="drawer-content flex flex-col">
-            <!-- Page content here -->
             <div class="navbar bg-base-100">
                 <div class="flex-none lg:hidden">
                     <label for="my-drawer-2" class="btn btn-square btn-ghost">
@@ -26,21 +24,20 @@
                 </div>
             </div>
             <div class="p-4">
-                {% block body %}{% endblock %}
+                {% block content %}{% endblock %}
             </div>
         </div> 
         <div class="drawer-side">
             <label for="my-drawer-2" class="drawer-overlay"></label> 
             <ul class="menu p-4 w-80 h-full bg-base-200 text-base-content">
-                <!-- Sidebar content here -->
                 <li><a href="{{ url_for('admin.index') }}">Dashboard</a></li>
-                <li><a href="{{ url_for('user.index_view') }}">Users</a></li>
-                <li><a href="{{ url_for('testimonial.index_view') }}">Testimonials</a></li>
-                <li><a href="{{ url_for('businessprofile.index_view') }}">Business Profiles</a></li>
-                <li><a href="{{ url_for('testimonialrequest.index_view') }}">Testimonial Requests</a></li>
+                <li><a href="{{ url_for('admin.users') }}">Users</a></li>
+                <li><a href="{{ url_for('admin.testimonials') }}">Testimonials</a></li>
+                <li><a href="{{ url_for('admin.chatbot_logs') }}">Chatbot Logs</a></li>
+                <li><a href="{{ url_for('admin.settings') }}">Settings</a></li>
             </ul>
         </div>
     </div>
-    {% block tail_js %}{% endblock %}
+    {% block extra_js %}{% endblock %}
 </body>
 </html>

@@ -1,0 +1,31 @@
+<!-- templates/admin/settings.html -->
+{% extends "admin/base.html" %}
+{% block title %}Admin - Settings{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-bold mb-4">Admin Settings</h1>
+<form method="POST" action="{{ url_for('admin.settings') }}" class="card bg-base-100 shadow-xl">
+    <div class="card-body">
+        <div class="form-control">
+            <label class="label" for="site_name">
+                <span class="label-text">Site Name</span>
+            </label>
+            <input type="text" id="site_name" name="site_name" value="{{ settings.site_name }}" class="input input-bordered" required>
+        </div>
+        <div class="form-control">
+            <label class="label" for="contact_email">
+                <span class="label-text">Contact Email</span>
+            </label>
+            <input type="email" id="contact_email" name="contact_email" value="{{ settings.contact_email }}" class="input input-bordered" required>
+        </div>
+        <div class="form-control">
+            <label class="label" for="testimonial_approval_required">
+                <span class="label-text">Require Approval for Testimonials</span>
+            </label>
+            <input type="checkbox" id="testimonial_approval_required" name="testimonial_approval_required" class="toggle" {% if settings.testimonial_approval_required %}checked{% endif %}>
+        </div>
+        <div class="form-control mt-6">
+            <button type="submit" class="btn btn-primary">Save Settings</button>
+        </div>
+    </div>
+</form>
+{% endblock %}

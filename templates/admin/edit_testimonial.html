@@ -1,0 +1,43 @@
+<!-- templates/admin/edit_testimonial.html -->
+{% extends "admin/base.html" %}
+{% block title %}Admin - Edit Testimonial{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-bold mb-4">Edit Testimonial</h1>
+<form method="POST" action="{{ url_for('admin.edit_testimonial', testimonial_id=testimonial.id) }}" class="card bg-base-100 shadow-xl">
+    <div class="card-body">
+        <div class="form-control">
+            <label class="label" for="reviewer_name">
+                <span class="label-text">Reviewer Name</span>
+            </label>
+            <input type="text" id="reviewer_name" name="reviewer_name" value="{{ testimonial.reviewer_name }}" class="input input-bordered">
+        </div>
+        <div class="form-control">
+            <label class="label" for="reviewer_email">
+                <span class="label-text">Reviewer Email</span>
+            </label>
+            <input type="email" id="reviewer_email" name="reviewer_email" value="{{ testimonial.reviewer_email }}" class="input input-bordered">
+        </div>
+        <div class="form-control">
+            <label class="label" for="sentiment">
+                <span class="label-text">Sentiment</span>
+            </label>
+            <input type="text" id="sentiment" name="sentiment" value="{{ testimonial.sentiment }}" class="input input-bordered" required>
+        </div>
+        <div class="form-control">
+            <label class="label" for="score">
+                <span class="label-text">Score</span>
+            </label>
+            <input type="number" id="score" name="score" value="{{ testimonial.score }}" step="0.1" min="1" max="10" class="input input-bordered" required>
+        </div>
+        <div class="form-control">
+            <label class="label" for="summary">
+                <span class="label-text">Summary</span>
+            </label>
+            <textarea id="summary" name="summary" class="textarea textarea-bordered" rows="4">{{ testimonial.summary }}</textarea>
+        </div>
+        <div class="form-control mt-6">
+            <button type="submit" class="btn btn-primary">Update Testimonial</button>
+        </div>
+    </div>
+</form>
+{% endblock %}

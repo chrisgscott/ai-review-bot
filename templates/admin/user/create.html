@@ -1,0 +1,30 @@
+{% extends 'admin/model/custom_list.html' %}
+{% block body %}
+<div class="container mx-auto px-4 py-8">
+  <h1 class="text-2xl font-bold mb-4">{{ admin_view.name }} - Create New</h1>
+  
+  <form method="post" class="bg-base-100 shadow-xl rounded-lg p-6">
+    {% for field in form %}
+      <div class="form-control mb-4">
+        {{ field.label(class="label") }}
+        {% if field.type == 'BooleanField' %}
+          {{ field(class="toggle") }}
+        {% else %}
+          {{ field(class="input input-bordered w-full") }}
+        {% endif %}
+        {% if field.errors %}
+          <div class="text-error text-sm mt-1">
+            {% for error in field.errors %}
+              <span>{{ error }}</span>
+            {% endfor %}
+          </div>
+        {% endif %}
+      </div>
+    {% endfor %}
+    
+    <div class="mt-6">
+      <button type="submit" class="btn btn-primary">Create {{ admin_view.name }}</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

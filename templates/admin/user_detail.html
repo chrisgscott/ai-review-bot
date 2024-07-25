@@ -1,0 +1,37 @@
+<!-- templates/admin/user_detail.html -->
+{% extends "admin/base.html" %}
+{% block title %}Admin - User Detail{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-bold mb-4">User Detail</h1>
+<div class="card bg-base-100 shadow-xl">
+    <div class="card-body">
+        <h2 class="card-title">{{ user.email }}</h2>
+        <p>Registration Date: {{ user.registration_date.strftime('%Y-%m-%d %H:%M:%S') }}</p>
+        <p>Last Login: {{ user.last_login.strftime('%Y-%m-%d %H:%M:%S') if user.last_login else 'Never' }}</p>
+        <p>Login Count: {{ user.login_count }}</p>
+        <p>Admin: {{ 'Yes' if user.is_admin else 'No' }}</p>
+    </div>
+</div>
+
+<h2 class="text-xl font-bold mt-8 mb-4">User's Testimonials</h2>
+<table class="table w-full">
+    <thead>
+        <tr>
+            <th>Reviewer Name</th>
+            <th>Sentiment</th>
+            <th>Score</th>
+            <th>Submitted At</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for testimonial in testimonials %}
+        <tr>
+            <td>{{ testimonial.reviewer_name or 'Anonymous' }}</td>
+            <td>{{ testimonial.sentiment }}</td>
+            <td>{{ testimonial.score }}</td>
+            <td>{{ testimonial.submitted_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

@@ -1,0 +1,35 @@
+<!-- templates/admin/users.html -->
+{% extends "admin/base.html" %}
+{% block title %}Admin - Users{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-bold mb-4">Users</h1>
+<div class="mb-4">
+    <a href="{{ url_for('admin.create_user') }}" class="btn btn-primary">Add New User</a>
+</div>
+<table class="table w-full">
+    <thead>
+        <tr>
+            <th>Email</th>
+            <th>Registration Date</th>
+            <th>Last Login</th>
+            <th>Login Count</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for user in users %}
+        <tr>
+            <td>{{ user.email }}</td>
+            <td>{{ user.registration_date.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+            <td>{{ user.last_login.strftime('%Y-%m-%d %H:%M:%S') if user.last_login else 'Never' }}</td>
+            <td>{{ user.login_count }}</td>
+            <td>
+                <a href="{{ url_for('admin.user_detail', user_id=user.id) }}" class="btn btn-sm btn-primary">View Details</a>
+                <a href="{{ url_for('admin.edit_user', user_id=user.id) }}" class="btn btn-sm btn-info">Edit</a>
+                <a href="{{ url_for('admin.delete_confirmation', item_type='user', item_id=user.id) }}" class="btn btn-sm btn-error">Delete</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

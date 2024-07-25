@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, url_for, redirect, flash
+from flask import Flask, render_template, request, jsonify, url_for, redirect, flash, Blueprint
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from flask_bcrypt import Bcrypt
@@ -10,12 +10,14 @@ import sib_api_v3_sdk
 from sib_api_v3_sdk.rest import ApiException
 from dotenv import load_dotenv
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 import hashlib
-from flask_admin import Admin
-from flask_admin.contrib.sqla import ModelView
-from flask_admin import BaseView, expose
+from sqlalchemy import func
 import logging
+from flask.cli import with_appcontext
+import click
+from werkzeug.security import generate_password_hash
+
 logging.basicConfig(level=logging.INFO)
 
 # Load environment variables from .env file
@@ -47,12 +49,21 @@ api_instance = sib_api_v3_sdk.TransactionalEmailsApi(sib_api_v3_sdk.ApiClient(co
 # Models
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(80), unique=True, nullable=False)
+    email = db.Column(db.String(120), unique=True, nullable=False)
     password = db.Column(db.String(120), nullable=False)
     is_admin = db.Column(db.Boolean, default=False)
+    registration_date = db.Column(db.DateTime, default=datetime.utcnow)
+    last_login = db.Column(db.DateTime)
+    login_count = db.Column(db.Integer, default=0)
 
+    testimonials = db.relationship('Testimonial', backref='user', lazy=True)
+    business_profile = db.relationship('BusinessProfile', uselist=False, back_populates='user')
+
+    def __repr__(self):
+        return f'<User {self.email}>'
 class Testimonial(db.Model):
     id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     reviewer_name = db.Column(db.String(100), nullable=True)
     reviewer_email = db.Column(db.String(120), nullable=True)
     questions = db.Column(db.Text, nullable=False)
@@ -69,6 +80,7 @@ class BusinessProfile(db.Model):
     business_description = db.Column(db.Text, nullable=False)
     testimonial_guidance = db.Column(db.Text, nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    user = db.relationship('User', back_populates='business_profile')
 
 class TestimonialRequest(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -78,71 +90,188 @@ class TestimonialRequest(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     submitted = db.Column(db.Boolean, default=False)
 
-# Admin views
-class SecureModelView(ModelView):
-    def is_accessible(self):
-        return current_user.is_authenticated and current_user.is_admin
+class ChatbotLog(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    interaction_date = db.Column(db.DateTime, default=datetime.utcnow)
+    initial_request = db.Column(db.Text, nullable=False)
+    follow_up_questions = db.Column(db.Text, nullable=True)
+    user_responses = db.Column(db.Text, nullable=True)
 
-    def inaccessible_callback(self, name, **kwargs):
-        return redirect(url_for('login', next=request.url))
+class Settings(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    site_name = db.Column(db.String(100), nullable=False, default="Leave Some Love")
+    contact_email = db.Column(db.String(120), nullable=False, default="contact@leavesomelove.com")
+    testimonial_approval_required = db.Column(db.Boolean, default=False)
 
-class UserAdminView(SecureModelView):
-    list_template = 'admin/model/custom_list.html'
-    column_exclude_list = ['password']
-    form_excluded_columns = ['password']
-    column_searchable_list = ['username']
-    column_filters = ['is_admin']
-    can_create = True
-    can_edit = True
-    can_delete = True
+    @classmethod
+    def get(cls):
+        return cls.query.first()
+
+# Admin Blueprint
+admin = Blueprint('admin', __name__, url_prefix='/admin')
+
+@admin.before_request
+@login_required
+def require_admin():
+    if not current_user.is_admin:
+        flash('You do not have permission to access the admin area.', 'danger')
+        return redirect(url_for('index'))
+
+@admin.route('/')
+def index():
+    total_users = User.query.count()
+    total_testimonials = Testimonial.query.count()
+    avg_sentiment = db.session.query(func.avg(Testimonial.score)).scalar() or 0
+    recent_users = User.query.order_by(User.id.desc()).limit(5).all()
+    recent_testimonials = Testimonial.query.order_by(Testimonial.id.desc()).limit(5).all()
     
-    def is_accessible(self):
-        return current_user.is_authenticated and current_user.is_admin
+    return render_template('admin/dashboard.html', 
+                           total_users=total_users,
+                           total_testimonials=total_testimonials,
+                           avg_sentiment=avg_sentiment,
+                           recent_users=recent_users,
+                           recent_testimonials=recent_testimonials)
 
-    def inaccessible_callback(self, name, **kwargs):
-        return redirect(url_for('login', next=request.url))
+@admin.route('/users')
+def users():
+    users = User.query.all()
+    return render_template('admin/users.html', users=users)
 
-class TestimonialAdminView(SecureModelView):
-    list_template = 'admin/model/custom_list.html'
-    column_searchable_list = ['reviewer_name', 'reviewer_email', 'summary']
-    column_filters = ['sentiment', 'score']
-    can_create = True
-    can_edit = True
-    can_delete = True
+@admin.route('/user/<int:user_id>')
+def user_detail(user_id):
+    user = User.query.get_or_404(user_id)
+    testimonials = Testimonial.query.filter_by(user_id=user_id).all()
+    return render_template('admin/user_detail.html', user=user, testimonials=testimonials)
 
-class BusinessProfileAdminView(SecureModelView):
-    list_template = 'admin/model/custom_list.html'
-    column_searchable_list = ['business_name']
-    can_create = True
-    can_edit = True
-    can_delete = True
+@admin.route('/testimonials')
+def testimonials():
+    page = request.args.get('page', 1, type=int)
+    per_page = 20
+    query = Testimonial.query
 
-class TestimonialRequestAdminView(SecureModelView):
-    list_template = 'admin/model/custom_list.html'
-    column_searchable_list = ['email', 'first_name']
-    column_filters = ['submitted']
-    can_create = True
-    can_edit = True
-    can_delete = True
+    # Filtering
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
+    user_id = request.args.get('user_id')
+    min_score = request.args.get('min_score', type=float)
 
-class DashboardView(BaseView):
-    @expose('/')
-    def index(self):
-        total_users = User.query.count()
-        total_testimonials = Testimonial.query.count()
-        avg_sentiment = db.session.query(db.func.avg(Testimonial.score)).scalar() or 0
-        return self.render('admin/dashboard.html', total_users=total_users, 
-                           total_testimonials=total_testimonials, avg_sentiment=avg_sentiment)
+    if start_date:
+        query = query.filter(Testimonial.submitted_at >= datetime.strptime(start_date, '%Y-%m-%d'))
+    if end_date:
+        query = query.filter(Testimonial.submitted_at <= datetime.strptime(end_date, '%Y-%m-%d'))
+    if user_id:
+        query = query.filter(Testimonial.user_id == user_id)
+    if min_score is not None:
+        query = query.filter(Testimonial.score >= min_score)
 
-# Initialize Admin
-admin = Admin(app, name='Leave Some Love Admin', template_mode='bootstrap3', base_template='admin/base.html')
+    # Sorting
+    sort = request.args.get('sort', 'submitted_at')
+    direction = request.args.get('direction', 'desc')
+    if direction == 'desc':
+        query = query.order_by(getattr(Testimonial, sort).desc())
+    else:
+        query = query.order_by(getattr(Testimonial, sort).asc())
 
-# Add admin views
-admin.add_view(UserAdminView(User, db.session, name='User'))
-admin.add_view(TestimonialAdminView(Testimonial, db.session, name='Testimonial'))
-admin.add_view(BusinessProfileAdminView(BusinessProfile, db.session, name='BusinessProfile'))
-admin.add_view(TestimonialRequestAdminView(TestimonialRequest, db.session, name='TestimonialRequest'))
-admin.add_view(DashboardView(name='Dashboard', endpoint='admin_dashboard'))
+    testimonials = query.paginate(page=page, per_page=per_page, error_out=False)
+    return render_template('admin/testimonials.html', testimonials=testimonials)
+
+@admin.route('/chatbot-logs')
+def chatbot_logs():
+    logs = ChatbotLog.query.order_by(ChatbotLog.interaction_date.desc()).all()
+    return render_template('admin/chatbot_logs.html', logs=logs)
+
+@admin.route('/user/<int:user_id>/edit', methods=['GET', 'POST'])
+@login_required
+def edit_user(user_id):
+    user = User.query.get_or_404(user_id)
+    if request.method == 'POST':
+        user.email = request.form['email']
+        user.is_admin = 'is_admin' in request.form
+        db.session.commit()
+        flash('User updated successfully', 'success')
+        return redirect(url_for('admin.users'))
+    return render_template('admin/edit_user.html', user=user)
+
+@admin.route('/user/create', methods=['GET', 'POST'])
+@login_required
+def create_user():
+    if request.method == 'POST':
+        email = request.form['email']
+        password = request.form['password']
+        is_admin = 'is_admin' in request.form
+        
+        existing_user = User.query.filter_by(email=email).first()
+        if existing_user:
+            flash('Email already exists', 'danger')
+        else:
+            hashed_password = generate_password_hash(password)
+            new_user = User(email=email, password=hashed_password, is_admin=is_admin)
+            db.session.add(new_user)
+            db.session.commit()
+            flash('User created successfully', 'success')
+            return redirect(url_for('admin.users'))
+    return render_template('admin/create_user.html')
+
+@admin.route('/testimonial/<int:testimonial_id>/edit', methods=['GET', 'POST'])
+@login_required
+def edit_testimonial(testimonial_id):
+    testimonial = Testimonial.query.get_or_404(testimonial_id)
+    if request.method == 'POST':
+        testimonial.reviewer_name = request.form['reviewer_name']
+        testimonial.reviewer_email = request.form['reviewer_email']
+        testimonial.sentiment = request.form['sentiment']
+        testimonial.score = float(request.form['score'])
+        testimonial.summary = request.form['summary']
+        db.session.commit()
+        flash('Testimonial updated successfully', 'success')
+        return redirect(url_for('admin.testimonials'))
+    return render_template('admin/edit_testimonial.html', testimonial=testimonial)
+
+@admin.route('/delete/<string:item_type>/<int:item_id>', methods=['GET', 'POST'])
+@login_required
+def delete_confirmation(item_type, item_id):
+    if item_type == 'user':
+        item = User.query.get_or_404(item_id)
+        cancel_url = url_for('admin.users')
+    elif item_type == 'testimonial':
+        item = Testimonial.query.get_or_404(item_id)
+        cancel_url = url_for('admin.testimonials')
+    else:
+        flash('Invalid item type', 'danger')
+        return redirect(url_for('admin.index'))
+    
+    if request.method == 'POST':
+        db.session.delete(item)
+        db.session.commit()
+        flash(f'{item_type.capitalize()} deleted successfully', 'success')
+        return redirect(cancel_url)
+    
+    return render_template('admin/delete_confirmation.html', 
+                           item_type=item_type, 
+                           cancel_url=cancel_url, 
+                           confirm_url=url_for('admin.delete_confirmation', item_type=item_type, item_id=item_id))
+
+@admin.route('/settings', methods=['GET', 'POST'])
+@login_required
+def settings():
+    settings = Settings.query.first()
+    if not settings:
+        settings = Settings()
+        db.session.add(settings)
+    
+    if request.method == 'POST':
+        settings.site_name = request.form['site_name']
+        settings.contact_email = request.form['contact_email']
+        settings.testimonial_approval_required = 'testimonial_approval_required' in request.form
+        db.session.commit()
+        flash('Settings updated successfully', 'success')
+        return redirect(url_for('admin.settings'))
+    
+    return render_template('admin/settings.html', settings=settings)
+
+# Register admin blueprint
+app.register_blueprint(admin)
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -159,30 +288,33 @@ def index():
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
-        username = request.form['username']
+        email = request.form['email']
         password = request.form['password']
-        existing_user = User.query.filter_by(username=username).first()
+        existing_user = User.query.filter_by(email=email).first()
         if existing_user is None:
             hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
-            new_user = User(username=username, password=hashed_password)
+            new_user = User(email=email, password=hashed_password)
             db.session.add(new_user)
             db.session.commit()
             flash('Registration successful. Please log in.', 'success')
             return redirect(url_for('login'))
-        flash('Username already exists.', 'danger')
+        flash('Email already exists.', 'danger')
     return render_template('register.html')
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        username = request.form['username']
+        email = request.form['email']
         password = request.form['password']
-        user = User.query.filter_by(username=username).first()
+        user = User.query.filter_by(email=email).first()
         if user and bcrypt.check_password_hash(user.password, password):
             login_user(user)
+            user.last_login = datetime.utcnow()
+            user.login_count += 1
+            db.session.commit()
             flash('Logged in successfully.', 'success')
             return redirect(url_for('dashboard'))
-        flash('Invalid username or password.', 'danger')
+        flash('Invalid email or password.', 'danger')
     return render_template('login.html')
 
 @app.route('/logout')
@@ -206,6 +338,7 @@ def dashboard():
                            average_sentiment=average_sentiment,
                            recent_testimonials=recent_testimonials,
                            current_user=current_user)
+
 
 @app.route('/new_testimonial')
 @login_required
@@ -432,7 +565,7 @@ def make_admin(user_id):
     user = User.query.get_or_404(user_id)
     user.is_admin = True
     db.session.commit()
-    flash(f'User {user.username} is now an admin.', 'success')
+    flash(f'User {user.email} is now an admin.', 'success')
     return redirect(url_for('admin.index'))
 
 # Helper functions
@@ -540,6 +673,18 @@ def extract_snippets(text):
     )
     snippets = response.choices[0].message.content.strip().split('\n')
     return [snippet.strip('- ') for snippet in snippets if snippet.strip()]
+
+@app.cli.command("create-admin")
+@click.argument("email")
+@with_appcontext
+def create_admin(email):
+    user = User.query.filter_by(email=email).first()
+    if user:
+        user.is_admin = True
+        db.session.commit()
+        click.echo(f"User with email {email} has been promoted to admin.")
+    else:
+        click.echo(f"User with email {email} not found.")
 
 if __name__ == '__main__':
     app.run(debug=True)

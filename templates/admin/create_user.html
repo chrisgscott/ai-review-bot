@@ -1,0 +1,31 @@
+<!-- templates/admin/create_user.html -->
+{% extends "admin/base.html" %}
+{% block title %}Admin - Create User{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-bold mb-4">Create New User</h1>
+<form method="POST" action="{{ url_for('admin.create_user') }}" class="card bg-base-100 shadow-xl">
+    <div class="card-body">
+        <div class="form-control">
+            <label class="label" for="email">
+                <span class="label-text">Email</span>
+            </label>
+            <input type="email" id="email" name="email" class="input input-bordered" required>
+        </div>
+        <div class="form-control">
+            <label class="label" for="password">
+                <span class="label-text">Password</span>
+            </label>
+            <input type="password" id="password" name="password" class="input input-bordered" required>
+        </div>
+        <div class="form-control">
+            <label class="label" for="is_admin">
+                <span class="label-text">Admin Status</span>
+            </label>
+            <input type="checkbox" id="is_admin" name="is_admin" class="toggle">
+        </div>
+        <div class="form-control mt-6">
+            <button type="submit" class="btn btn-primary">Create User</button>
+        </div>
+    </div>
+</form>
+{% endblock %}

@@ -1,0 +1,28 @@
+<!-- templates/admin/chatbot_logs.html -->
+{% extends "admin/base.html" %}
+{% block title %}Admin - Chatbot Logs{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-bold mb-4">Chatbot Logs</h1>
+<table class="table w-full">
+    <thead>
+        <tr>
+            <th>User</th>
+            <th>Interaction Date</th>
+            <th>Initial Request</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for log in logs %}
+        <tr>
+            <td>{{ log.user.email }}</td>
+            <td>{{ log.interaction_date.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+            <td>{{ log.initial_request[:50] }}...</td>
+            <td>
+                <a href="#" class="btn btn-sm btn-primary">View Details</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

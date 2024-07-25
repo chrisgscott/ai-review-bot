@@ -1,0 +1,40 @@
+<!-- templates/admin/testimonials.html -->
+{% extends "admin/base.html" %}
+{% block title %}Admin - Testimonials{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-bold mb-4">Testimonials</h1>
+<table class="table w-full">
+    <thead>
+        <tr>
+            <th>Reviewer</th>
+            <th>Sentiment</th>
+            <th>Score</th>
+            <th>Submitted At</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for testimonial in testimonials.items %}
+        <tr>
+            <td>{{ testimonial.reviewer_name or 'Anonymous' }}</td>
+            <td>{{ testimonial.sentiment }}</td>
+            <td>{{ testimonial.score }}</td>
+            <td>{{ testimonial.submitted_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+            <td>
+                <a href="{{ url_for('admin.edit_testimonial', testimonial_id=testimonial.id) }}" class="btn btn-sm btn-info">Edit</a>
+                <a href="{{ url_for('admin.delete_confirmation', item_type='testimonial', item_id=testimonial.id) }}" class="btn btn-sm btn-error">Delete</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+<div class="mt-4">
+    {% for page in testimonials.iter_pages() %}
+        {% if page %}
+            <a href="{{ url_for('admin.testimonials', page=page) }}" class="btn btn-sm {% if page == testimonials.page %}btn-active{% endif %}">{{ page }}</a>
+        {% else %}
+            <span class="btn btn-sm btn-disabled">...</span>
+        {% endif %}
+    {% endfor %}
+</div>
+{% endblock %}
