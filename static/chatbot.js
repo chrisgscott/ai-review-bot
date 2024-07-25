@@ -157,7 +157,8 @@ function submitTestimonial() {
             questions: askedQuestions,
             responses: responses,
             firstName: personalInfo.firstName,
-            email: personalInfo.email
+            email: personalInfo.email,
+            business_id: businessId  // Add this line
         }),
     })
     .then(response => response.json())
@@ -179,6 +180,8 @@ function submitTestimonial() {
         document.getElementById('action-buttons').style.display = 'flex';
     });
 }
+
+
 
 // Make sure initializeChatbot is available globally
 window.initializeChatbot = initializeChatbot;

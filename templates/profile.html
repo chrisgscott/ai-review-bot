@@ -1,32 +1,42 @@
 {% extends "base.html" %}
-
 {% block title %}My Profile{% endblock %}
-
 {% block content %}
+
 <div class="max-w-2xl mx-auto">
     <h1 class="text-2xl font-bold mb-6">My Profile</h1>
-    <form method="POST" class="space-y-6">
+    <form method="POST" action="{{ url_for('profile') }}">
         <div class="form-control">
-            <label for="business_name" class="label">
+            <label class="label" for="business_name">
                 <span class="label-text">Business Name</span>
             </label>
-            <input type="text" id="business_name" name="business_name" value="{{ profile.business_name if profile else '' }}" required class="input input-bordered w-full">
+            <input type="text" id="business_name" name="business_name" value="{{ profile.business_name }}" class="input input-bordered" required>
         </div>
+
         <div class="form-control">
-            <label for="business_description" class="label">
+            <label class="label" for="business_description">
                 <span class="label-text">Business Description</span>
             </label>
-            <textarea id="business_description" name="business_description" rows="3" required class="textarea textarea-bordered w-full">{{ profile.business_description if profile else '' }}</textarea>
+            <textarea id="business_description" name="business_description" class="textarea textarea-bordered" required>{{ profile.business_description }}</textarea>
         </div>
+
         <div class="form-control">
-            <label for="testimonial_guidance" class="label">
+            <label class="label" for="testimonial_guidance">
                 <span class="label-text">Testimonial Guidance</span>
             </label>
-            <textarea id="testimonial_guidance" name="testimonial_guidance" rows="3" required class="textarea textarea-bordered w-full">{{ profile.testimonial_guidance if profile else '' }}</textarea>
+            <textarea id="testimonial_guidance" name="testimonial_guidance" class="textarea textarea-bordered" required>{{ profile.testimonial_guidance }}</textarea>
         </div>
+
+        <div class="form-control">
+            <label class="label" for="custom_url">
+                <span class="label-text">Custom Review URL</span>
+            </label>
+            <input type="text" id="custom_url" name="custom_url" value="{{ current_user.custom_url }}" class="input input-bordered" required>
+        </div>
+
         <div class="form-control mt-6">
             <button type="submit" class="btn btn-primary">Save Profile</button>
         </div>
     </form>
 </div>
+
 {% endblock %}

@@ -17,6 +17,8 @@ import logging
 from flask.cli import with_appcontext
 import click
 from werkzeug.security import generate_password_hash
+import string
+import random
 
 logging.basicConfig(level=logging.INFO)
 
@@ -55,12 +57,14 @@ class User(UserMixin, db.Model):
     registration_date = db.Column(db.DateTime, default=datetime.utcnow)
     last_login = db.Column(db.DateTime)
     login_count = db.Column(db.Integer, default=0)
+    custom_url = db.Column(db.String(120), unique=True, nullable=True)
 
     testimonials = db.relationship('Testimonial', backref='user', lazy=True)
     business_profile = db.relationship('BusinessProfile', uselist=False, back_populates='user')
 
     def __repr__(self):
         return f'<User {self.email}>'
+    
 class Testimonial(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
@@ -290,11 +294,15 @@ def register():
     if request.method == 'POST':
         email = request.form['email']
         password = request.form['password']
+        business_name = request.form['business_name']
         existing_user = User.query.filter_by(email=email).first()
         if existing_user is None:
             hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
-            new_user = User(email=email, password=hashed_password)
+            custom_url = generate_custom_url(business_name)
+            new_user = User(email=email, password=hashed_password, custom_url=custom_url)
+            new_profile = BusinessProfile(business_name=business_name, user=new_user)
             db.session.add(new_user)
+            db.session.add(new_profile)
             db.session.commit()
             flash('Registration successful. Please log in.', 'success')
             return redirect(url_for('login'))
@@ -374,11 +382,34 @@ def profile():
                 user_id=current_user.id
             )
             db.session.add(profile)
+        current_user.custom_url = request.form['custom_url']
         db.session.commit()
         flash('Profile updated successfully.', 'success')
         return redirect(url_for('profile'))
     return render_template('profile.html', profile=profile)
 
+@app.route('/review/<custom_url>', methods=['GET', 'POST'])
+def custom_review(custom_url):
+    user = User.query.filter_by(custom_url=custom_url).first_or_404()
+    if request.method == 'POST':
+        # Handle testimonial submission
+        data = request.json
+        testimonial = Testimonial(
+            user_id=user.id,
+            reviewer_name=data.get('reviewer_name'),
+            reviewer_email=data.get('reviewer_email'),
+            questions='\n'.join(data['questions']),
+            responses='\n'.join(data['responses']),
+            sentiment=analyze_sentiment(data['responses'])['sentiment'],
+            score=analyze_sentiment(data['responses'])['score'],
+            snippets=', '.join(extract_snippets(' '.join(data['responses']))),
+            summary=generate_summary(' '.join(data['responses']))
+        )
+        db.session.add(testimonial)
+        db.session.commit()
+        return jsonify({'status': 'success', 'message': 'Testimonial submitted successfully'})
+    
+    return render_template('index.html', business_name=user.business_profile.business_name, business_id=user.id)
 @app.route('/submit_testimonial/<unique_id>', methods=['GET', 'POST'])
 def submit_testimonial_by_link(unique_id):
     testimonial_request = TestimonialRequest.query.filter_by(unique_id=unique_id).first_or_404()
@@ -421,33 +452,37 @@ def submit_testimonial_by_link(unique_id):
 
 @app.route('/submit_testimonial', methods=['POST'])
 def submit_testimonial():
-    data = request.json
-    questions = data['questions']
-    responses = data['responses']
-    first_name = data.get('firstName')
-    email = data.get('email')
-    
-    full_text = " ".join([f"Q: {q} A: {r}" for q, r in zip(questions, responses)])
-    
-    analysis = analyze_sentiment(full_text)
-    snippets = extract_snippets(full_text)
-    summary = generate_summary(full_text)
-    
-    testimonial = Testimonial(
-        reviewer_name=first_name,
-        reviewer_email=email,
-        questions='\n'.join(questions),
-        responses='\n'.join(responses),
-        sentiment=analysis['sentiment'],
-        score=analysis['score'],
-        snippets=', '.join(snippets),
-        summary=summary
-    )
-    
-    db.session.add(testimonial)
-    db.session.commit()
-    
-    return jsonify({'status': 'success', 'redirect': url_for('confirmation')})
+    try:
+        data = request.get_json()
+        questions = data['questions']
+        responses = data['responses']
+        first_name = data.get('firstName')
+        email = data.get('email')
+        
+        full_text = " ".join([f"Q: {q} A: {r}" for q, r in zip(questions, responses)])
+        
+        analysis = analyze_sentiment(full_text)
+        snippets = extract_snippets(full_text)
+        summary = generate_summary(full_text)
+        
+        testimonial = Testimonial(
+            reviewer_name=first_name,
+            reviewer_email=email,
+            questions='\n'.join(questions),
+            responses='\n'.join(responses),
+            sentiment=analysis['sentiment'],
+            score=analysis['score'],
+            snippets=', '.join(snippets),
+            summary=summary
+        )
+        
+        db.session.add(testimonial)
+        db.session.commit()
+        
+        return jsonify({'status': 'success', 'redirect': url_for('confirmation')})
+    except Exception as e:
+        app.logger.error(f"Error in submit_testimonial: {str(e)}")
+        return jsonify({'status': 'error', 'message': 'An error occurred while submitting the testimonial'}), 500
 
 @app.route('/send_testimonial_request', methods=['POST'])
 @login_required
@@ -528,13 +563,17 @@ def get_business_profile():
 
 @app.route('/get_next_question', methods=['POST'])
 def get_next_question():
-    data = request.json
-    conversation_history = data['conversation_history']
-    
-    profile = BusinessProfile.query.first()
-    next_question = generate_follow_up_question(conversation_history, profile)
-    
-    return jsonify({'question': next_question})
+    try:
+        data = request.get_json()
+        conversation_history = data['conversation_history']
+        
+        profile = BusinessProfile.query.first()
+        next_question = generate_follow_up_question(conversation_history, profile)
+        
+        return jsonify({'question': next_question})
+    except Exception as e:
+        app.logger.error(f"Error in get_next_question: {str(e)}")
+        return jsonify({'status': 'error', 'message': 'An error occurred while getting the next question'}), 500
 
 @app.route('/confirmation')
 def confirmation():
@@ -569,6 +608,19 @@ def make_admin(user_id):
     return redirect(url_for('admin.index'))
 
 # Helper functions
+def generate_custom_url(business_name):
+    # Convert business name to URL-friendly format
+    base_url = ''.join(e for e in business_name if e.isalnum()).lower()
+    
+    while True:
+        # Add random string to ensure uniqueness
+        random_string = ''.join(random.choices(string.ascii_lowercase + string.digits, k=6))
+        custom_url = f"{base_url}-{random_string}"
+        
+        # Check if this URL is already in use
+        if User.query.filter_by(custom_url=custom_url).first() is None:
+            return custom_url
+        
 def get_gravatar_url(email, size=100):
     """Generate Gravatar URL for the given email."""
     email = email.lower().encode('utf-8')
@@ -673,6 +725,7 @@ def extract_snippets(text):
     )
     snippets = response.choices[0].message.content.strip().split('\n')
     return [snippet.strip('- ') for snippet in snippets if snippet.strip()]
+    
 
 @app.cli.command("create-admin")
 @click.argument("email")

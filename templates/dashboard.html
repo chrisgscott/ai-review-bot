@@ -16,6 +16,16 @@
         </a>
     </div>
     {% endif %}
+    <div class="card bg-base-100 shadow-xl mb-6">
+        <div class="card-body">
+            <h2 class="card-title">Your Custom Review URL</h2>
+            <div class="flex items-center">
+                <input type="text" value="{{ url_for('custom_review', custom_url=current_user.custom_url, _external=True) }}" class="input input-bordered flex-grow mr-2" id="custom-url" readonly>
+                <button onclick="copyToClipboard()" class="btn btn-primary mr-2">Copy</button>
+                <a href="{{ url_for('profile') }}" class="btn btn-secondary">Edit</a>
+            </div>
+        </div>
+    </div>
 
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <div class="card bg-base-100 shadow-xl">
