@@ -118,4 +118,30 @@
     });
 </script>
 
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const customUrlInput = document.getElementById('custom_url');
+        const checkUrl = '/check_custom_url';
+        let debounceTimer;
+    
+        customUrlInput.addEventListener('input', function() {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => {
+                const customUrl = this.value;
+                fetch(`${checkUrl}?url=${encodeURIComponent(customUrl)}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.available) {
+                            this.classList.remove('input-error');
+                            this.classList.add('input-success');
+                        } else {
+                            this.classList.remove('input-success');
+                            this.classList.add('input-error');
+                        }
+                    });
+            }, 300);  // Debounce for 300ms
+        });
+    });
+    </script>
+
 {% endblock %}

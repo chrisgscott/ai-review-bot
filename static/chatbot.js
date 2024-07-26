@@ -18,6 +18,11 @@ let personalInfo = {
 };
 
 function initializeChatbot(firstName = null, email = null) {
+    // Check if the chatbot has already been initialized
+    if (document.querySelector('#messages').children.length > 0) {
+        return;
+    }
+
     if (firstName && email) {
         personalInfo.firstName = firstName;
         personalInfo.email = email;
@@ -26,8 +31,9 @@ function initializeChatbot(firstName = null, email = null) {
 
     // Check if we're on the custom review page
     if (typeof businessId !== 'undefined') {
-        collectingPersonalInfo = false;
-        startMainConversation();
+        // For custom review page, we still want to collect info if not provided
+        collectingPersonalInfo = !(personalInfo.firstName && personalInfo.email);
+        startConversation();
     } else {
         // Fetch business profile and start conversation
         fetch('/get_business_profile')
@@ -35,6 +41,10 @@ function initializeChatbot(firstName = null, email = null) {
             .then(data => {
                 businessProfile = data;
                 startConversation();
+            })
+            .catch(error => {
+                console.error('Error fetching business profile:', error);
+                startConversation(); // Start conversation even if profile fetch fails
             });
     }
 }
@@ -53,15 +63,21 @@ function askPersonalInfoQuestion() {
 }
 
 function startMainConversation() {
-    if (typeof businessId !== 'undefined') {
-        // Custom review flow
-        initialQuestion = `Hi there! We'd love to hear about your experience. How would you rate it overall?`;
+    // Clear any existing messages to prevent duplication
+    document.querySelector('#messages').innerHTML = '';
+
+    if (typeof businessId !== 'undefined' && (!personalInfo.firstName || !personalInfo.email)) {
+        // Custom review flow, but personal info not collected
+        collectingPersonalInfo = true;
+        askPersonalInfoQuestion();
     } else {
-        // Original testimonial request flow
-        initialQuestion = `Hi there, ${personalInfo.firstName}! We'd love to hear about your experience with ${businessProfile.business_name || 'our business'}. How would you rate it overall?`;
+        // Original testimonial request flow or custom review flow with personal info
+        let greeting = typeof businessId !== 'undefined' ? 'Hi there' : `Hi there, ${personalInfo.firstName}`;
+        let businessName = businessProfile ? businessProfile.business_name : 'our business';
+        initialQuestion = `${greeting}! We'd love to hear about your experience${typeof businessId !== 'undefined' ? '' : ` with ${businessName}`}. How would you rate it overall?`;
+        addMessage(initialQuestion, true);
+        askedQuestions = [initialQuestion]; // Reset askedQuestions to only include the initial question
     }
-    addMessage(initialQuestion, true);
-    askedQuestions.push(initialQuestion);
 }
 
 function addMessage(message, isBot = false) {
@@ -99,6 +115,9 @@ function sendMessage() {
     if (message) {
         addMessage(message);
         userInput.value = '';
+        
+        // Reset the height of the textarea
+        userInput.style.height = 'auto';
 
         if (collectingPersonalInfo) {
             if (!personalInfo.firstName) {
@@ -154,9 +173,12 @@ function showSubmitOption() {
 }
 
 function submitTestimonial() {
-    document.getElementById('submit-testimonial').disabled = true;
-    document.getElementById('submit-testimonial').textContent = 'Submitting...';
-    document.getElementById('action-buttons').style.display = 'none';
+    const submitButton = document.getElementById('submit-testimonial');
+    const actionButtons = document.getElementById('action-buttons');
+
+    submitButton.disabled = true;
+    submitButton.textContent = 'Submitting...';
+    actionButtons.style.display = 'none';
 
     const testimonialData = {
         questions: askedQuestions,
@@ -165,7 +187,6 @@ function submitTestimonial() {
         email: personalInfo.email
     };
 
-    // Add businessId if it's defined (for custom review flow)
     if (typeof businessId !== 'undefined') {
         testimonialData.business_id = businessId;
     }
@@ -177,24 +198,44 @@ function submitTestimonial() {
         },
         body: JSON.stringify(testimonialData),
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
     .then(data => {
         if (data.status === 'success') {
             window.location.href = data.redirect;
         } else {
-            alert('There was an error submitting your testimonial. Please try again.');
-            document.getElementById('submit-testimonial').disabled = false;
-            document.getElementById('submit-testimonial').textContent = 'Submit Testimonial';
-            document.getElementById('action-buttons').style.display = 'flex';
+            throw new Error(data.message || 'Unknown error occurred');
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        alert('There was an error submitting your testimonial. Please try again.');
-        document.getElementById('submit-testimonial').disabled = false;
-        document.getElementById('submit-testimonial').textContent = 'Submit Testimonial';
-        document.getElementById('action-buttons').style.display = 'flex';
+        let errorMessage = 'There was an error submitting your testimonial. ';
+        if (error.message) {
+            errorMessage += error.message;
+        }
+        errorMessage += ' Please try again.';
+        showErrorMessage(errorMessage);
+    })
+    .finally(() => {
+        submitButton.disabled = false;
+        submitButton.textContent = 'Submit Testimonial';
+        actionButtons.style.display = 'flex';
     });
+}
+
+function showErrorMessage(message) {
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'alert alert-error';
+    errorDiv.textContent = message;
+    document.getElementById('chatbot').prepend(errorDiv);
+
+    setTimeout(() => {
+        errorDiv.remove();
+    }, 5000);
 }
 
 

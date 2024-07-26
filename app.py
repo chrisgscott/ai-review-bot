@@ -19,6 +19,7 @@ import click
 from werkzeug.security import generate_password_hash
 import string
 import random
+from sqlalchemy.exc import IntegrityError
 
 logging.basicConfig(level=logging.INFO)
 
@@ -93,6 +94,7 @@ class TestimonialRequest(db.Model):
     unique_id = db.Column(db.String(36), unique=True, nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     submitted = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)  # Add this line
 
 class ChatbotLog(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -300,13 +302,23 @@ def register():
             hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
             custom_url = generate_custom_url(business_name)
             new_user = User(email=email, password=hashed_password, custom_url=custom_url)
-            new_profile = BusinessProfile(business_name=business_name, user=new_user)
+            new_profile = BusinessProfile(
+                business_name=business_name,
+                business_description="Tell us about your business",  # Default value
+                testimonial_guidance="What would you like customers to focus on?",  # Default value
+                user=new_user
+            )
             db.session.add(new_user)
             db.session.add(new_profile)
-            db.session.commit()
-            flash('Registration successful. Please log in.', 'success')
-            return redirect(url_for('login'))
-        flash('Email already exists.', 'danger')
+            try:
+                db.session.commit()
+                flash('Registration successful. Please log in.', 'success')
+                return redirect(url_for('login'))
+            except IntegrityError:
+                db.session.rollback()
+                flash('An error occurred. Please try again.', 'danger')
+        else:
+            flash('Email already exists.', 'danger')
     return render_template('register.html')
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -384,7 +396,13 @@ def profile():
             db.session.add(profile)
         
         # Update custom URL
-        current_user.custom_url = request.form['custom_url']
+        new_custom_url = request.form['custom_url']
+        if new_custom_url != current_user.custom_url:
+            existing_user = User.query.filter(User.custom_url == new_custom_url, User.id != current_user.id).first()
+            if existing_user:
+                flash('This custom URL is already in use. Please choose a different one.', 'danger')
+                return render_template('profile.html', profile=profile)
+            current_user.custom_url = new_custom_url
         
         # Update email
         new_email = request.form['email']
@@ -403,11 +421,22 @@ def profile():
                 flash('Passwords do not match.', 'danger')
                 return redirect(url_for('profile'))
         
-        db.session.commit()
-        flash('Profile updated successfully.', 'success')
-        return redirect(url_for('profile'))
-    
+        try:
+            db.session.commit()
+            flash('Profile updated successfully.', 'success')
+            return redirect(url_for('profile'))
+        except IntegrityError:
+            db.session.rollback()
+            flash('An error occurred. The custom URL might already be in use.', 'danger')
+        
     return render_template('profile.html', profile=profile)
+
+@app.route('/check_custom_url')
+@login_required
+def check_custom_url():
+    custom_url = request.args.get('url')
+    existing_user = User.query.filter(User.custom_url == custom_url, User.id != current_user.id).first()
+    return jsonify({'available': existing_user is None})
 
 @app.route('/review/<custom_url>', methods=['GET', 'POST'])
 def custom_review(custom_url):
@@ -431,6 +460,7 @@ def custom_review(custom_url):
         return jsonify({'status': 'success', 'message': 'Testimonial submitted successfully'})
     
     return render_template('index.html', business_name=user.business_profile.business_name, business_id=user.id)
+
 @app.route('/submit_testimonial/<unique_id>', methods=['GET', 'POST'])
 def submit_testimonial_by_link(unique_id):
     testimonial_request = TestimonialRequest.query.filter_by(unique_id=unique_id).first_or_404()
@@ -479,14 +509,21 @@ def submit_testimonial():
         responses = data['responses']
         first_name = data.get('firstName')
         email = data.get('email')
-        
+        business_id = data.get('business_id')  # Get the business_id from the request
+
         full_text = " ".join([f"Q: {q} A: {r}" for q, r in zip(questions, responses)])
         
         analysis = analyze_sentiment(full_text)
         snippets = extract_snippets(full_text)
         summary = generate_summary(full_text)
         
+        # Find the user associated with the business_id
+        user = User.query.get(business_id)
+        if not user:
+            raise ValueError("Invalid business_id")
+
         testimonial = Testimonial(
+            user_id=user.id,  # Set the user_id
             reviewer_name=first_name,
             reviewer_email=email,
             questions='\n'.join(questions),
@@ -502,9 +539,10 @@ def submit_testimonial():
         
         return jsonify({'status': 'success', 'redirect': url_for('confirmation')})
     except Exception as e:
+        db.session.rollback()
         app.logger.error(f"Error in submit_testimonial: {str(e)}")
         return jsonify({'status': 'error', 'message': 'An error occurred while submitting the testimonial'}), 500
-
+    
 @app.route('/testimonial_requests')
 @login_required
 def testimonial_requests():
@@ -535,7 +573,8 @@ def send_testimonial_request():
         template_id=1,  # Replace with your actual template ID from Brevo
         params={
             "first_name": first_name,
-            "testimonial_link": testimonial_link
+            "testimonial_link": testimonial_link,
+            "business_name": business_name
         }
     )
 

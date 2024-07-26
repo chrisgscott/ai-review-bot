@@ -20,7 +20,7 @@
     <div id="messages" class="mb-4 h-64 overflow-y-auto"></div>
 
     <div id="input-area" class="flex mb-4">
-        <input type="text" id="user-input" class="input input-bordered flex-grow mr-2" placeholder="Type your message...">
+        <textarea id="user-input" class="textarea textarea-bordered flex-grow mr-2" placeholder="Type your message..." rows="1"></textarea>
         <button onclick="sendMessage()" class="btn btn-primary">Send</button>
     </div>
 
@@ -30,6 +30,15 @@
     
     <button id="submit-testimonial" onclick="submitTestimonial()" class="btn btn-primary w-full hidden">Submit Testimonial</button>
 </div>
+
+<style>
+    #user-input {
+        min-height: 2.5rem;
+        max-height: 150px;
+        resize: none;
+        overflow-y: auto;
+    }
+</style>
 {% endblock %}
 
 {% block scripts %}
@@ -37,6 +46,27 @@
     {% if business_id %}
         var businessId = "{{ business_id }}";
     {% endif %}
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const textarea = document.getElementById('user-input');
+
+        function autoResize() {
+            this.style.height = 'auto';
+            this.style.height = (this.scrollHeight) + 'px';
+        }
+
+        textarea.addEventListener('input', autoResize);
+
+        textarea.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        // Initial call to set the correct height
+        autoResize.call(textarea);
+    });
 </script>
 <script src="{{ url_for('static', filename='chatbot.js') }}"></script>
 {% endblock %}

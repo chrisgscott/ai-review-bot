@@ -1,6 +1,6 @@
-{% extends "base.html" %} {% block title %}Testimonial Detail{% endblock %} {%
-block content %}
-
+{% extends "base.html" %}
+{% block title %}Testimonial Detail{% endblock %}
+{% block content %}
 <div class="container mx-auto px-4 py-8">
   <h1 class="text-3xl font-bold mb-6">Testimonial Detail</h1>
 
@@ -12,25 +12,15 @@ block content %}
           <div class="flex items-center mb-4">
             <div class="avatar mr-4">
               <div class="w-16 rounded-full">
-                <img
-                  src="{{ gravatar_url or url_for('static', filename='images/default-avatar.png') }}"
-                  alt="Reviewer Avatar"
-                />
+                <img src="{{ gravatar_url or url_for('static', filename='images/default-avatar.png') }}" alt="Reviewer Avatar" />
               </div>
             </div>
             <div>
-              <h2 class="text-xl font-bold">
-                {{ testimonial.reviewer_name or 'Anonymous' }}
-              </h2>
-              <p class="text-sm text-gray-500">
-                {{ testimonial.reviewer_email or 'Email not provided' }}
-              </p>
+              <h2 class="text-xl font-bold">{{ testimonial.reviewer_name or 'Anonymous' }}</h2>
+              <p class="text-sm text-gray-500">{{ testimonial.reviewer_email or 'Email not provided' }}</p>
             </div>
           </div>
-          <p>
-            <strong>Date Submitted:</strong> {{
-            testimonial.submitted_at.strftime('%Y-%m-%d %H:%M:%S') }}
-          </p>
+          <p><strong>Date Submitted:</strong> {{ testimonial.submitted_at.strftime('%Y-%m-%d %H:%M:%S') }}</p>
           <div class="mt-4">
             <div class="badge badge-primary">{{ testimonial.sentiment }}</div>
             <span class="ml-2">Score: {{ testimonial.score }}/10</span>
@@ -66,9 +56,9 @@ block content %}
     <div class="card bg-base-100 shadow-xl">
       <div class="card-body">
         <h2 class="card-title mb-4">Full Chat Transcript</h2>
-        {% set questions = testimonial.questions.split('\n') %} {% set responses
-        = testimonial.responses.split('\n') %} {% for i in
-        range(questions|length) %}
+        {% set questions = testimonial.questions.split('\n') %}
+        {% set responses = testimonial.responses.split('\n') %}
+        {% for i in range(questions|length) %}
         <div class="chat chat-start mb-4">
           <div class="chat-bubble chat-bubble-primary">
             <strong>Q:</strong> {{ questions[i] }}
@@ -80,48 +70,40 @@ block content %}
             <strong>A:</strong> {{ responses[i] }}
           </div>
         </div>
-        {% endif %} {% endfor %}
+        {% endif %}
+        {% endfor %}
       </div>
     </div>
   </div>
 
   <div class="mt-6 flex justify-between items-center">
-    <a href="{{ url_for('all_testimonials') }}" class="btn btn-primary"
-      >Back to All Testimonials</a
-    >
-    <button onclick="confirmDelete()" class="btn btn-outline btn-error">
-      Delete Testimonial
-    </button>
+    <a href="{{ url_for('all_testimonials') }}" class="btn btn-primary">Back to All Testimonials</a>
+    <button onclick="confirmDelete()" class="btn btn-outline btn-error">Delete Testimonial</button>
   </div>
 
   <script>
     function confirmDelete() {
-      if (
-        confirm(
-          "Are you sure you want to delete this testimonial? This action cannot be undone."
-        )
-      ) {
+      if (confirm("Are you sure you want to delete this testimonial? This action cannot be undone.")) {
         fetch("{{ url_for('delete_testimonial', id=testimonial.id) }}", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
         })
-          .then((response) => response.json())
-          .then((data) => {
-            if (data.status === "success") {
-              window.location.href = "{{ url_for('all_testimonials') }}";
-            } else {
-              alert("An error occurred while deleting the testimonial.");
-            }
-          })
-          .catch((error) => {
-            console.error("Error:", error);
+        .then(response => response.json())
+        .then(data => {
+          if (data.status === "success") {
+            window.location.href = "{{ url_for('all_testimonials') }}";
+          } else {
             alert("An error occurred while deleting the testimonial.");
-          });
+          }
+        })
+        .catch(error => {
+          console.error("Error:", error);
+          alert("An error occurred while deleting the testimonial.");
+        });
       }
     }
   </script>
-
-  {% endblock %}
 </div>
+{% endblock %}
