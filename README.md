@@ -4,7 +4,8 @@
 - [ ] Add a way to share a summarization of their review to the review site of the owner's choice (ex: generate a review that includes the gist of their chat, copy it to the clipboard and send them to a Google Business listing to paste in as a review)
 - [ ] Add a bulk testimonial request feature (upload a list of first name and email address, send all requests at once)
 - [ ] Create a public profile page of testimonials and user details to capture google juice.
-- [ ] 
+- [ ] Add a notification email to the business owner when a testimonial is submitted.
+- [ ] Add a way for the reviewer to copy their review summary and paste in the review site of the business owners' choice (only if the sentiment is 8 or higher??)
 - [X] ~~Implement user authentication~~
 - [X] ~~Add profile management~~
 - [X] ~~Create admin dashboard~~

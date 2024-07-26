@@ -1,31 +1,67 @@
-<!-- templates/admin/settings.html -->
 {% extends "admin/base.html" %}
-{% block title %}Admin - Settings{% endblock %}
 {% block content %}
-<h1 class="text-2xl font-bold mb-4">Admin Settings</h1>
-<form method="POST" action="{{ url_for('admin.settings') }}" class="card bg-base-100 shadow-xl">
-    <div class="card-body">
-        <div class="form-control">
-            <label class="label" for="site_name">
-                <span class="label-text">Site Name</span>
-            </label>
-            <input type="text" id="site_name" name="site_name" value="{{ settings.site_name }}" class="input input-bordered" required>
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold mb-6">Admin Settings</h1>
+    <form method="POST" class="space-y-6">
+        <!-- General Settings Section -->
+        <div class="card bg-base-100 shadow-xl">
+            <div class="card-body">
+                <h2 class="card-title text-2xl mb-4">General Settings</h2>
+                <div class="form-control">
+                    <label for="site_name" class="label">
+                        <span class="label-text">Site Name</span>
+                    </label>
+                    <input type="text" name="site_name" id="site_name" value="{{ settings.site_name }}" class="input input-bordered w-full">
+                </div>
+                <div class="form-control mt-4">
+                    <label for="contact_email" class="label">
+                        <span class="label-text">Contact Email</span>
+                    </label>
+                    <input type="email" name="contact_email" id="contact_email" value="{{ settings.contact_email }}" class="input input-bordered w-full">
+                </div>
+                <div class="form-control mt-4">
+                    <label class="label cursor-pointer">
+                        <span class="label-text">Require approval for testimonials</span>
+                        <input type="checkbox" name="testimonial_approval_required" {% if settings.testimonial_approval_required %}checked{% endif %} class="checkbox checkbox-primary">
+                    </label>
+                </div>
+            </div>
         </div>
-        <div class="form-control">
-            <label class="label" for="contact_email">
-                <span class="label-text">Contact Email</span>
-            </label>
-            <input type="email" id="contact_email" name="contact_email" value="{{ settings.contact_email }}" class="input input-bordered" required>
+
+        <!-- Prompt Settings Section -->
+        <div class="card bg-base-100 shadow-xl">
+            <div class="card-body">
+                <h2 class="card-title text-2xl mb-4">Prompt Settings</h2>
+                <div class="form-control">
+                    <label for="summary_prompt" class="label">
+                        <span class="label-text">Summary Prompt</span>
+                    </label>
+                    <textarea name="summary_prompt" id="summary_prompt" rows="6" class="textarea textarea-bordered h-24">{{ settings.summary_prompt }}</textarea>
+                </div>
+                <div class="form-control mt-4">
+                    <label for="follow_up_prompt" class="label">
+                        <span class="label-text">Follow-up Question Prompt</span>
+                    </label>
+                    <textarea name="follow_up_prompt" id="follow_up_prompt" rows="6" class="textarea textarea-bordered h-24">{{ settings.follow_up_prompt }}</textarea>
+                </div>
+                <div class="form-control mt-4">
+                    <label for="sentiment_prompt" class="label">
+                        <span class="label-text">Sentiment Analysis Prompt</span>
+                    </label>
+                    <textarea name="sentiment_prompt" id="sentiment_prompt" rows="6" class="textarea textarea-bordered h-24">{{ settings.sentiment_prompt }}</textarea>
+                </div>
+                <div class="form-control mt-4">
+                    <label for="snippet_prompt" class="label">
+                        <span class="label-text">Snippet Extraction Prompt</span>
+                    </label>
+                    <textarea name="snippet_prompt" id="snippet_prompt" rows="6" class="textarea textarea-bordered h-24">{{ settings.snippet_prompt }}</textarea>
+                </div>
+            </div>
         </div>
-        <div class="form-control">
-            <label class="label" for="testimonial_approval_required">
-                <span class="label-text">Require Approval for Testimonials</span>
-            </label>
-            <input type="checkbox" id="testimonial_approval_required" name="testimonial_approval_required" class="toggle" {% if settings.testimonial_approval_required %}checked{% endif %}>
-        </div>
-        <div class="form-control mt-6">
+
+        <div class="mt-6">
             <button type="submit" class="btn btn-primary">Save Settings</button>
         </div>
-    </div>
-</form>
+    </form>
+</div>
 {% endblock %}

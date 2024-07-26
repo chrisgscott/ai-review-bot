@@ -20,6 +20,7 @@ from werkzeug.security import generate_password_hash
 import string
 import random
 from sqlalchemy.exc import IntegrityError
+from flask_migrate import Migrate
 
 logging.basicConfig(level=logging.INFO)
 
@@ -43,6 +44,8 @@ login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 
 client = OpenAI(api_key=app.config['OPENAI_API_KEY'])
+
+migrate = Migrate(app, db)
 
 # Configure Brevo API client
 configuration = sib_api_v3_sdk.Configuration()
@@ -108,7 +111,11 @@ class Settings(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     site_name = db.Column(db.String(100), nullable=False, default="Leave Some Love")
     contact_email = db.Column(db.String(120), nullable=False, default="contact@leavesomelove.com")
-    testimonial_approval_required = db.Column(db.Boolean, default=False)
+    testimonial_approval_required = db.Column(db.Boolean, nullable=False, default=False)
+    summary_prompt = db.Column(db.Text, nullable=False, default="Summarize the testimonial.")
+    follow_up_prompt = db.Column(db.Text, nullable=False, default="Generate a follow-up question.")
+    sentiment_prompt = db.Column(db.Text, nullable=False, default="Analyze the sentiment.")
+    snippet_prompt = db.Column(db.Text, nullable=False, default="Extract snippets.")
 
     @classmethod
     def get(cls):
@@ -270,6 +277,10 @@ def settings():
         settings.site_name = request.form['site_name']
         settings.contact_email = request.form['contact_email']
         settings.testimonial_approval_required = 'testimonial_approval_required' in request.form
+        settings.summary_prompt = request.form['summary_prompt']
+        settings.follow_up_prompt = request.form['follow_up_prompt']
+        settings.sentiment_prompt = request.form['sentiment_prompt']
+        settings.snippet_prompt = request.form['snippet_prompt']
         db.session.commit()
         flash('Settings updated successfully', 'success')
         return redirect(url_for('admin.settings'))
@@ -712,11 +723,9 @@ def get_gravatar_url(email, size=100):
     return f"https://www.gravatar.com/avatar/{email_hash}?s={size}&d=identicon"
 
 def generate_summary(conversation):
+    settings = Settings.get()
     prompt = f"""
-    Summarize the following customer testimonial conversation in a way that sounds like it was written by the customer. 
-    Use their own words and phrases where possible, and maintain their tone and sentiment. 
-    The summary should be concise but comprehensive, highlighting the key points of their experience.
-    Make it suitable for posting as a review, written in the first person.
+    {settings.summary_prompt}
 
     Conversation:
     {conversation}
@@ -735,6 +744,7 @@ def generate_summary(conversation):
     return response.choices[0].message.content.strip()
 
 def generate_follow_up_question(conversation_history, profile):
+    settings = Settings.get()
     if profile:
         business_context = f"""
         Business Name: {profile.business_name}
@@ -744,29 +754,11 @@ def generate_follow_up_question(conversation_history, profile):
     else:
         business_context = "No specific business information provided."
 
-    prompt = f"""
-    Based on the following conversation history and business context, generate a relevant follow-up question to elicit a response that would make an excellent testimonial. The question should:
-
-    1. Encourage the customer to highlight specific positive aspects of their experience with {profile.business_name if profile else 'the business'}.
-    2. Guide the customer towards expressing how the products/services have benefited them or solved a problem.
-    3. Prompt for comparisons with competitors or previous experiences, if relevant.
-    4. Invite the customer to share any memorable or standout moments.
-    5. Encourage the use of descriptive language and specific examples.
-    6. If appropriate, ask how they would describe the product/service to others, especially considering the target audience.
-    7. Focus on the aspects highlighted in the Testimonial Guidance: {profile.testimonial_guidance if profile else 'the business strengths'}.
-    8. If relevant to the conversation, find opportunities to highlight the customer's "before vs after" experience and how the product or service made a positive impact.
-    9. Avoid overly negative or critical directions, focusing instead on constructive and positive aspects.
-
-    Ask only a single question at a time and aim for questions that could lead to quotable, impactful statements that showcase the value and quality of the products/services.
-
-    Business Context:
-    {business_context}
-
-    Conversation history:
-    {conversation_history}
-
-    Follow-up question:
-    """
+    prompt = settings.follow_up_prompt.format(
+        profile=profile,
+        business_context=business_context,
+        conversation_history=conversation_history
+    )
 
     response = client.chat.completions.create(
         model="gpt-4o-mini",
@@ -779,10 +771,11 @@ def generate_follow_up_question(conversation_history, profile):
     return response.choices[0].message.content.strip()
 
 def analyze_sentiment(text):
+    settings = Settings.get()
     response = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[
-            {"role": "system", "content": "You are a sentiment analysis tool. Analyze the sentiment of the following text and respond with a score between 0 and 1, where 0 is very negative and 1 is very positive. Your response should ONLY include the numerical score."},
+            {"role": "system", "content": settings.sentiment_prompt},
             {"role": "user", "content": text}
         ]
     )
@@ -800,16 +793,16 @@ def analyze_sentiment(text):
     return {'sentiment': 'Positive' if score > 0.5 else 'Negative', 'score': score_1_10}
 
 def extract_snippets(text):
+    settings = Settings.get()
     response = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[
-            {"role": "system", "content": "You are a text analysis tool. Extract 2-3 short, positive snippets from the following text. Respond with each snippet on a new line."},
+            {"role": "system", "content": settings.snippet_prompt},
             {"role": "user", "content": text}
         ]
     )
     snippets = response.choices[0].message.content.strip().split('\n')
     return [snippet.strip('- ') for snippet in snippets if snippet.strip()]
-    
 
 @app.cli.command("create-admin")
 @click.argument("email")
