@@ -4,10 +4,10 @@
 <div class="container mx-auto px-4 py-8">
   <h1 class="text-3xl font-bold mb-6">Testimonial Detail</h1>
 
-  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 bg-base-100 rounded-lg">
     <!-- Left column: Testimonial Info -->
     <div class="lg:col-span-1">
-      <div class="card bg-base-100 shadow-xl">
+      <div class="card bg-base-100">
         <div class="card-body">
           <div class="flex items-center mb-4">
             <div class="avatar mr-4">
@@ -20,9 +20,9 @@
               <p class="text-sm text-gray-500">{{ testimonial.reviewer_email or 'Email not provided' }}</p>
             </div>
           </div>
-          <p><strong>Date Submitted:</strong> {{ testimonial.submitted_at.strftime('%Y-%m-%d %H:%M:%S') }}</p>
+          <p><strong>Date Submitted:</strong><br> {{ testimonial.submitted_at.strftime('%b %d, %Y') }}</p>
           <div class="mt-4">
-            <div class="badge badge-primary">{{ testimonial.sentiment }}</div>
+            <div class="badge badge-accent">{{ testimonial.sentiment }}</div>
             <span class="ml-2">Score: {{ testimonial.score }}/10</span>
           </div>
         </div>
@@ -31,16 +31,16 @@
 
     <!-- Right column: Summary and Snippets -->
     <div class="lg:col-span-2">
-      <div class="card bg-base-100 shadow-xl mb-6">
+      <div class="card bg-base-100">
         <div class="card-body">
-          <h2 class="card-title">Summary</h2>
+          <h2 class="card-title">AI Summary</h2>
           <p>{{ testimonial.summary }}</p>
         </div>
       </div>
 
-      <div class="card bg-base-100 shadow-xl">
+      <div class="card bg-base-100">
         <div class="card-body">
-          <h2 class="card-title">Snippets</h2>
+          <h2 class="card-title">Testimonial Highlights</h2>
           <ul class="list-disc list-inside">
             {% for snippet in testimonial.snippets.split(', ') %}
             <li>{{ snippet }}</li>
@@ -53,20 +53,20 @@
 
   <!-- Full Chat Transcript -->
   <div class="mt-8">
-    <div class="card bg-base-100 shadow-xl">
+    <div class="card bg-base-100">
       <div class="card-body">
         <h2 class="card-title mb-4">Full Chat Transcript</h2>
         {% set questions = testimonial.questions.split('\n') %}
         {% set responses = testimonial.responses.split('\n') %}
         {% for i in range(questions|length) %}
         <div class="chat chat-start mb-4">
-          <div class="chat-bubble chat-bubble-primary">
+          <div class="chat-bubble bg-base-200">
             <strong>Q:</strong> {{ questions[i] }}
           </div>
         </div>
         {% if i < responses|length %}
         <div class="chat chat-end mb-4">
-          <div class="chat-bubble chat-bubble-secondary">
+          <div class="chat-bubble chat-bubble-accent">
             <strong>A:</strong> {{ responses[i] }}
           </div>
         </div>
@@ -78,7 +78,7 @@
 
   <div class="mt-6 flex justify-between items-center">
     <a href="{{ url_for('all_testimonials') }}" class="btn btn-primary">Back to All Testimonials</a>
-    <button onclick="confirmDelete()" class="btn btn-outline btn-error">Delete Testimonial</button>
+    <button onclick="confirmDelete()" class="btn btn-outline btn-secondary">Delete Testimonial</button>
   </div>
 
   <script>

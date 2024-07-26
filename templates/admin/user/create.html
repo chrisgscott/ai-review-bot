@@ -3,7 +3,7 @@
 <div class="container mx-auto px-4 py-8">
   <h1 class="text-2xl font-bold mb-4">{{ admin_view.name }} - Create New</h1>
   
-  <form method="post" class="bg-base-100 shadow-xl rounded-lg p-6">
+  <form method="post" class="bg-base-100 rounded-lg p-6">
     {% for field in form %}
       <div class="form-control mb-4">
         {{ field.label(class="label") }}

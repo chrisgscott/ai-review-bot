@@ -3,6 +3,7 @@
 {% block title %}Admin - Testimonials{% endblock %}
 {% block content %}
 <h1 class="text-2xl font-bold mb-4">Testimonials</h1>
+<div class="bg-base-100 p-4 rounded-lg">
 <table class="table w-full">
     <thead>
         <tr>
@@ -21,13 +22,14 @@
             <td>{{ testimonial.score }}</td>
             <td>{{ testimonial.submitted_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
             <td>
-                <a href="{{ url_for('admin.edit_testimonial', testimonial_id=testimonial.id) }}" class="btn btn-sm btn-info">Edit</a>
-                <a href="{{ url_for('admin.delete_confirmation', item_type='testimonial', item_id=testimonial.id) }}" class="btn btn-sm btn-error">Delete</a>
+                <a href="{{ url_for('admin.edit_testimonial', testimonial_id=testimonial.id) }}" class="btn btn-xs px-6 mr-2 btn-primary">Edit</a>
+                <a href="{{ url_for('admin.delete_confirmation', item_type='testimonial', item_id=testimonial.id) }}" class="btn btn-xs px-6 btn-secondary btn-outline">Delete</a>
             </td>
         </tr>
         {% endfor %}
     </tbody>
 </table>
+
 <div class="mt-4">
     {% for page in testimonials.iter_pages() %}
         {% if page %}
@@ -36,5 +38,6 @@
             <span class="btn btn-sm btn-disabled">...</span>
         {% endif %}
     {% endfor %}
+</div>
 </div>
 {% endblock %}

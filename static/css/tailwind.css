@@ -2,6 +2,12 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Your existing styles... */
+
+.textarea {
+  border-radius: 1rem !important;
+}
+
 @layer components {
     .typing-indicator {
       width: auto;

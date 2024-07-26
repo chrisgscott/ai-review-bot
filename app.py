@@ -376,11 +376,30 @@ def dashboard():
 def new_testimonial():
     return render_template('new_testimonial.html')
 
+from sqlalchemy import desc
+
 @app.route('/all_testimonials')
 @login_required
 def all_testimonials():
-    testimonials = Testimonial.query.all()
-    return render_template('all_testimonials.html', testimonials=testimonials)
+    sort = request.args.get('sort', 'submitted_at')
+    order = request.args.get('order', 'desc')
+    search = request.args.get('search', '')
+
+    query = Testimonial.query.filter_by(user_id=current_user.id)
+
+    if search:
+        query = query.filter(
+            (Testimonial.reviewer_name.ilike(f'%{search}%')) |
+            (Testimonial.reviewer_email.ilike(f'%{search}%'))
+        )
+
+    if sort == 'submitted_at':
+        query = query.order_by(desc(Testimonial.submitted_at) if order == 'desc' else Testimonial.submitted_at)
+    elif sort == 'sentiment_score':
+        query = query.order_by(desc(Testimonial.score) if order == 'desc' else Testimonial.score)
+
+    testimonials = query.all()
+    return render_template('all_testimonials.html', testimonials=testimonials, current_sort=sort, current_order=order, search=search)
 
 @app.route('/pending_requests')
 @login_required
@@ -520,7 +539,7 @@ def submit_testimonial():
         responses = data['responses']
         first_name = data.get('firstName')
         email = data.get('email')
-        business_id = data.get('business_id')  # Get the business_id from the request
+        business_id = data.get('business_id')
 
         full_text = " ".join([f"Q: {q} A: {r}" for q, r in zip(questions, responses)])
         
@@ -528,13 +547,19 @@ def submit_testimonial():
         snippets = extract_snippets(full_text)
         summary = generate_summary(full_text)
         
-        # Find the user associated with the business_id
-        user = User.query.get(business_id)
-        if not user:
-            raise ValueError("Invalid business_id")
+        # Find the user associated with the business_id or use the current user
+        if business_id:
+            user = User.query.get(business_id)
+            if not user:
+                raise ValueError(f"Invalid business_id: {business_id}")
+        else:
+            # If no business_id is provided, use the current logged-in user
+            user = current_user
+            if not user.is_authenticated:
+                raise ValueError("No valid user found for this testimonial")
 
         testimonial = Testimonial(
-            user_id=user.id,  # Set the user_id
+            user_id=user.id,
             reviewer_name=first_name,
             reviewer_email=email,
             questions='\n'.join(questions),
@@ -549,10 +574,14 @@ def submit_testimonial():
         db.session.commit()
         
         return jsonify({'status': 'success', 'redirect': url_for('confirmation')})
+    except ValueError as e:
+        db.session.rollback()
+        app.logger.error(f"Value Error in submit_testimonial: {str(e)}")
+        return jsonify({'status': 'error', 'message': str(e)}), 400
     except Exception as e:
         db.session.rollback()
         app.logger.error(f"Error in submit_testimonial: {str(e)}")
-        return jsonify({'status': 'error', 'message': 'An error occurred while submitting the testimonial'}), 500
+        return jsonify({'status': 'error', 'message': 'An unexpected error occurred while submitting the testimonial'}), 500
     
 @app.route('/testimonial_requests')
 @login_required
@@ -754,6 +783,7 @@ def generate_follow_up_question(conversation_history, profile):
     else:
         business_context = "No specific business information provided."
 
+    # Replace placeholders in the prompt
     prompt = settings.follow_up_prompt.format(
         profile=profile,
         business_context=business_context,

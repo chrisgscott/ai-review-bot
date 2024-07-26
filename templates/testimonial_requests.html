@@ -6,7 +6,7 @@
     <h1 class="text-3xl font-bold mb-6">Testimonial Requests</h1>
 
     <!-- New Testimonial Request Form -->
-    <div class="card bg-base-100 shadow-xl mb-6">
+    <div class="card bg-base-100 mb-6">
         <div class="card-body">
             <h2 class="card-title mb-4">Send New Testimonial Request</h2>
             <form id="newRequestForm" class="flex items-end space-x-4">
@@ -22,13 +22,13 @@
                     </label>
                     <input type="text" id="first_name" name="first_name" required class="input input-bordered w-full" placeholder="John">
                 </div>
-                <button type="submit" class="btn btn-primary">Send a Request for a Testimonial</button>
+                <button type="submit" class="btn btn-primary px-8">Send a Request for a Testimonial</button>
             </form>
         </div>
     </div>
 
     <!-- Pending Requests -->
-    <div class="card bg-base-100 shadow-xl">
+    <div class="card bg-base-100">
         <div class="card-body">
             <h2 class="card-title mb-4">Pending Requests</h2>
             <div id="pendingRequestsList">
@@ -50,7 +50,7 @@
                                         <td>{{ request.first_name }}</td>
                                         <td>{{ request.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
                                         <td>
-                                            <button onclick="resendRequest({{ request.id }})" class="btn btn-sm btn-secondary">Resend</button>
+                                            <button onclick="resendRequest({{ request.id }})" class="btn btn-sm btn-accent">Resend</button>
                                         </td>
                                     </tr>
                                 {% endfor %}

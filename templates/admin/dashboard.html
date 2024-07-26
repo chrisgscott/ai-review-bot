@@ -2,21 +2,21 @@
 {% extends "admin/base.html" %}
 {% block title %}Admin Dashboard{% endblock %}
 {% block content %}
-<h1 class="text-2xl font-bold mb-4">Admin Dashboard</h1>
+<h1 class="text-3xl font-bold mb-6">Admin Dashboard</h1>
 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-    <div class="card bg-base-100 shadow-xl">
+    <div class="card bg-base-300 border border-base-300 rounded-lg">
         <div class="card-body">
             <h2 class="card-title">Total Users</h2>
             <p class="text-4xl">{{ total_users }}</p>
         </div>
     </div>
-    <div class="card bg-base-100 shadow-xl">
+    <div class="card bg-base-300 border border-base-300 rounded-lg">
         <div class="card-body">
             <h2 class="card-title">Total Testimonials</h2>
             <p class="text-4xl">{{ total_testimonials }}</p>
         </div>
     </div>
-    <div class="card bg-base-100 shadow-xl">
+    <div class="card bg-base-300 border border-base-300 rounded-lg">
         <div class="card-body">
             <h2 class="card-title">Average Sentiment</h2>
             <p class="text-4xl">{{ avg_sentiment | round(2) }}</p>
@@ -24,19 +24,15 @@
     </div>
 </div>
 
-<div class="mb-6">
-    <a href="{{ url_for('admin.settings') }}" class="btn btn-primary">Admin Settings</a>
-</div>
-
 <h2 class="text-xl font-bold mt-8 mb-4">Recent Users</h2>
-<ul class="menu bg-base-100 w-full">
+<ul class="menu bg-base-100 w-full rounded-lg">
     {% for user in recent_users %}
     <li><a href="{{ url_for('admin.user_detail', user_id=user.id) }}">{{ user.email }}</a></li>
     {% endfor %}
 </ul>
 
 <h2 class="text-xl font-bold mt-8 mb-4">Recent Testimonials</h2>
-<ul class="menu bg-base-100 w-full">
+<ul class="menu bg-base-100 w-full rounded-lg">
     {% for testimonial in recent_testimonials %}
     <li><a>{{ testimonial.reviewer_name or 'Anonymous' }} - {{ testimonial.sentiment }} ({{ testimonial.score }})</a></li>
     {% endfor %}

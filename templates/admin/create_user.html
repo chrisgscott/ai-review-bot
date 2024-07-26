@@ -3,7 +3,7 @@
 {% block title %}Admin - Create User{% endblock %}
 {% block content %}
 <h1 class="text-2xl font-bold mb-4">Create New User</h1>
-<form method="POST" action="{{ url_for('admin.create_user') }}" class="card bg-base-100 shadow-xl">
+<form method="POST" action="{{ url_for('admin.create_user') }}" class="card bg-base-100 rounded-lg">
     <div class="card-body">
         <div class="form-control">
             <label class="label" for="email">

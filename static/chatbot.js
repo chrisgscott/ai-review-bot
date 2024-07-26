@@ -17,8 +17,10 @@ let personalInfo = {
     email: ''
 };
 
+let personalInfoCollected = false;
+let submitOptionShown = false;
+
 function initializeChatbot(firstName = null, email = null) {
-    // Check if the chatbot has already been initialized
     if (document.querySelector('#messages').children.length > 0) {
         return;
     }
@@ -27,15 +29,13 @@ function initializeChatbot(firstName = null, email = null) {
         personalInfo.firstName = firstName;
         personalInfo.email = email;
         collectingPersonalInfo = false;
+        personalInfoCollected = true;
     }
 
-    // Check if we're on the custom review page
     if (typeof businessId !== 'undefined') {
-        // For custom review page, we still want to collect info if not provided
         collectingPersonalInfo = !(personalInfo.firstName && personalInfo.email);
         startConversation();
     } else {
-        // Fetch business profile and start conversation
         fetch('/get_business_profile')
             .then(response => response.json())
             .then(data => {
@@ -44,7 +44,7 @@ function initializeChatbot(firstName = null, email = null) {
             })
             .catch(error => {
                 console.error('Error fetching business profile:', error);
-                startConversation(); // Start conversation even if profile fetch fails
+                startConversation();
             });
     }
 }
@@ -63,20 +63,13 @@ function askPersonalInfoQuestion() {
 }
 
 function startMainConversation() {
-    // Clear any existing messages to prevent duplication
-    document.querySelector('#messages').innerHTML = '';
-
-    if (typeof businessId !== 'undefined' && (!personalInfo.firstName || !personalInfo.email)) {
-        // Custom review flow, but personal info not collected
-        collectingPersonalInfo = true;
-        askPersonalInfoQuestion();
-    } else {
-        // Original testimonial request flow or custom review flow with personal info
-        let greeting = typeof businessId !== 'undefined' ? 'Hi there' : `Hi there, ${personalInfo.firstName}`;
-        let businessName = businessProfile ? businessProfile.business_name : 'our business';
-        initialQuestion = `${greeting}! We'd love to hear about your experience${typeof businessId !== 'undefined' ? '' : ` with ${businessName}`}. How would you rate it overall?`;
+    if (!personalInfoCollected) {
+        personalInfoCollected = true;
+        let greeting = `Hi there, ${personalInfo.firstName}`;
+        let businessName = typeof businessId !== 'undefined' ? '' : ` with ${businessProfile.business_name || 'our business'}`;
+        initialQuestion = `${greeting}! We'd love to hear about your experience${businessName}. How would you rate it overall?`;
         addMessage(initialQuestion, true);
-        askedQuestions = [initialQuestion]; // Reset askedQuestions to only include the initial question
+        askedQuestions.push(initialQuestion);
     }
 }
 
@@ -84,7 +77,7 @@ function addMessage(message, isBot = false) {
     const messageDiv = document.createElement('div');
     messageDiv.className = isBot ? 'chat chat-start' : 'chat chat-end';
     const bubbleDiv = document.createElement('div');
-    bubbleDiv.className = 'chat-bubble chat-bubble-accent' + (isBot ? '' : ' chat-bubble-secondary');
+    bubbleDiv.className = isBot ? 'chat-bubble bg-base-300' : 'chat-bubble bg-accent text-accent-content';
     bubbleDiv.textContent = message;
     messageDiv.appendChild(bubbleDiv);
     document.getElementById('messages').appendChild(messageDiv);
@@ -95,7 +88,7 @@ function addTypingIndicator() {
     const typingDiv = document.createElement('div');
     typingDiv.className = 'chat chat-start';
     const bubbleDiv = document.createElement('div');
-    bubbleDiv.className = 'chat-bubble chat-bubble-accent typing-indicator';
+    bubbleDiv.className = 'chat-bubble bg-base-300 typing-indicator';
     bubbleDiv.innerHTML = '<span></span><span></span><span></span>';
     typingDiv.appendChild(bubbleDiv);
     document.getElementById('messages').appendChild(typingDiv);
@@ -115,8 +108,6 @@ function sendMessage() {
     if (message) {
         addMessage(message);
         userInput.value = '';
-        
-        // Reset the height of the textarea
         userInput.style.height = 'auto';
 
         if (collectingPersonalInfo) {
@@ -134,8 +125,10 @@ function sendMessage() {
 
             if (askedQuestions.length < INITIAL_QUESTIONS + FOLLOW_UP_QUESTIONS) {
                 getNextQuestion();
-            } else {
+            } else if (!submitOptionShown) {
                 showSubmitOption();
+            } else {
+                getNextQuestion();
             }
         }
     }
@@ -143,7 +136,6 @@ function sendMessage() {
 
 function getNextQuestion() {
     document.getElementById('input-area').style.display = 'none';
-    document.getElementById('action-buttons').style.display = 'none';
     addTypingIndicator();
 
     fetch('/get_next_question', {
@@ -161,15 +153,24 @@ function getNextQuestion() {
             addMessage(nextQuestion, true);
             askedQuestions.push(nextQuestion);
             document.getElementById('input-area').style.display = 'flex';
+            if (submitOptionShown) {
+                document.getElementById('action-buttons').style.display = 'flex';
+            }
         }, 1000);
     });
 }
 
 function showSubmitOption() {
-    addMessage("Thank you for your feedback. Your testimonial is ready to be submitted.", true);
-    document.getElementById('input-area').style.display = 'none';
-    document.getElementById('action-buttons').style.display = 'flex';
-    document.getElementById('submit-testimonial').style.display = 'block';
+    addMessage("Thank you for your feedback. Your testimonial is ready to be submitted, or you can continue chatting for more detailed feedback.", true);
+    submitOptionShown = true;
+    
+    document.getElementById('input-area').style.display = 'flex';
+    const actionButtons = document.getElementById('action-buttons');
+    actionButtons.innerHTML = `
+        <button onclick="getNextQuestion()" class="btn btn-primary mr-2">Keep Chatting</button>
+        <button id="submit-testimonial" onclick="submitTestimonial()" class="btn btn-secondary">Submit Testimonial</button>
+    `;
+    actionButtons.style.display = 'flex';
 }
 
 function submitTestimonial() {
@@ -177,7 +178,7 @@ function submitTestimonial() {
     const actionButtons = document.getElementById('action-buttons');
 
     submitButton.disabled = true;
-    submitButton.textContent = 'Submitting...';
+    submitButton.textContent = 'Submitting Your Testimonial...';
     actionButtons.style.display = 'none';
 
     const testimonialData = {
@@ -200,7 +201,7 @@ function submitTestimonial() {
     })
     .then(response => {
         if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+            return response.json().then(err => { throw err; });
         }
         return response.json();
     })
@@ -216,8 +217,9 @@ function submitTestimonial() {
         let errorMessage = 'There was an error submitting your testimonial. ';
         if (error.message) {
             errorMessage += error.message;
+        } else {
+            errorMessage += 'Please try again later.';
         }
-        errorMessage += ' Please try again.';
         showErrorMessage(errorMessage);
     })
     .finally(() => {
@@ -238,8 +240,6 @@ function showErrorMessage(message) {
     }, 5000);
 }
 
-
-// Make sure initializeChatbot is called when the page loads
 document.addEventListener('DOMContentLoaded', function() {
     initializeChatbot();
 });
