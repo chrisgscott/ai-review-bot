@@ -14,7 +14,7 @@
 
 ### Enhancements
 - [ ] Filter and sort reviews within the owner dashboard
-- [ ] Collect business logo and send business name + logo to Brevo for template customization.
+- [ ] Collect business logo and ~~send business name~~ + logo to Brevo for template customization.
 - [ ] Modify the chatbot interface to expand vertically as the chat length increases.
 - [ ] Modify the chatbot text input field to expand vertically and the text to wrap as the text input length increases.
 - [X] ~~Show a visualization of the sentiment score for each review~~

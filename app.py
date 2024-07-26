@@ -553,36 +553,49 @@ def testimonial_requests():
 @app.route('/send_testimonial_request', methods=['POST'])
 @login_required
 def send_testimonial_request():
-    email = request.form['email']
-    first_name = request.form['first_name']
-    unique_id = str(uuid.uuid4())
-    
-    new_request = TestimonialRequest(
-        email=email,
-        first_name=first_name,
-        unique_id=unique_id,
-        user_id=current_user.id
-    )
-    db.session.add(new_request)
-    db.session.commit()
-    
-    testimonial_link = url_for('submit_testimonial_by_link', unique_id=unique_id, _external=True)
-    
-    send_smtp_email = sib_api_v3_sdk.SendSmtpEmail(
-        to=[{"email": email, "name": first_name}],
-        template_id=1,  # Replace with your actual template ID from Brevo
-        params={
-            "first_name": first_name,
-            "testimonial_link": testimonial_link,
-            "business_name": business_name
-        }
-    )
-
     try:
+        email = request.form['email']
+        first_name = request.form['first_name']
+        unique_id = str(uuid.uuid4())
+        
+        # Fetch the business name
+        business_profile = BusinessProfile.query.filter_by(user_id=current_user.id).first()
+        if not business_profile:
+            app.logger.warning(f"No business profile found for user {current_user.id}")
+            business_name = "Our Business"
+        else:
+            business_name = business_profile.business_name
+        
+        new_request = TestimonialRequest(
+            email=email,
+            first_name=first_name,
+            unique_id=unique_id,
+            user_id=current_user.id
+        )
+        db.session.add(new_request)
+        db.session.commit()
+        
+        testimonial_link = url_for('submit_testimonial_by_link', unique_id=unique_id, _external=True)
+        
+        send_smtp_email = sib_api_v3_sdk.SendSmtpEmail(
+            to=[{"email": email, "name": first_name}],
+            template_id=1,  # Replace with your actual template ID from Brevo
+            params={
+                "first_name": first_name,
+                "testimonial_link": testimonial_link,
+                "business_name": business_name
+            }
+        )
+
         api_response = api_instance.send_transac_email(send_smtp_email)
         return jsonify({'status': 'success', 'message': 'Testimonial request sent successfully!'})
     except ApiException as e:
-        return jsonify({'status': 'error', 'message': f'Error sending testimonial request: {str(e)}'}), 500
+        app.logger.error(f"Brevo API error: {str(e)}")
+        return jsonify({'status': 'error', 'message': 'Error sending email. Please try again later.'}), 500
+    except Exception as e:
+        app.logger.error(f"Unexpected error in send_testimonial_request: {str(e)}")
+        db.session.rollback()
+        return jsonify({'status': 'error', 'message': 'An unexpected error occurred. Please try again later.'}), 500
 
 @app.route('/resend_request/<int:id>', methods=['POST'])
 @login_required
