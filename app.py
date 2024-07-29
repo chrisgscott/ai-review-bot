@@ -87,6 +87,8 @@ class BusinessProfile(db.Model):
     business_name = db.Column(db.String(100), nullable=False)
     business_description = db.Column(db.Text, nullable=False)
     testimonial_guidance = db.Column(db.Text, nullable=False)
+    review_url = db.Column(db.String(255), nullable=True)
+    review_button_text = db.Column(db.String(100), nullable=True, default="Post Your Review")
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     user = db.relationship('User', back_populates='business_profile')
 
@@ -416,11 +418,15 @@ def profile():
             profile.business_name = request.form['business_name']
             profile.business_description = request.form['business_description']
             profile.testimonial_guidance = request.form['testimonial_guidance']
+            profile.review_url = request.form['review_url']
+            profile.review_button_text = request.form['review_button_text']
         else:
             profile = BusinessProfile(
                 business_name=request.form['business_name'],
                 business_description=request.form['business_description'],
                 testimonial_guidance=request.form['testimonial_guidance'],
+                review_url=request.form['review_url'],
+                review_button_text=request.form['review_button_text'],
                 user_id=current_user.id
             )
             db.session.add(profile)
@@ -573,7 +579,10 @@ def submit_testimonial():
         db.session.add(testimonial)
         db.session.commit()
         
-        return jsonify({'status': 'success', 'redirect': url_for('confirmation')})
+        return jsonify({
+            'status': 'success',
+            'redirect': url_for('confirmation', testimonial_id=testimonial.id)
+        })
     except ValueError as e:
         db.session.rollback()
         app.logger.error(f"Value Error in submit_testimonial: {str(e)}")
@@ -699,9 +708,13 @@ def get_next_question():
         app.logger.error(f"Error in get_next_question: {str(e)}")
         return jsonify({'status': 'error', 'message': 'An error occurred while getting the next question'}), 500
 
-@app.route('/confirmation')
-def confirmation():
-    return render_template('confirmation.html')
+@app.route('/confirmation/<int:testimonial_id>')
+def confirmation(testimonial_id):
+    testimonial = Testimonial.query.get_or_404(testimonial_id)
+    business_profile = BusinessProfile.query.filter_by(user_id=testimonial.user_id).first()
+    return render_template('confirmation.html', 
+                           testimonial=testimonial, 
+                           business_profile=business_profile)
 
 @app.route('/delete_testimonial/<int:id>', methods=['POST'])
 @login_required

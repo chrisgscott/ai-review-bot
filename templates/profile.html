@@ -49,13 +49,33 @@
                 <!-- Custom Review URL Section -->
                 <div class="card bg-base-100 shadow-xl mb-6">
                     <div class="card-body">
-                        <h2 class="card-title">Custom Review URL</h2>
+                        <h2 class="card-title">Your Custom Review URL</h2>
                         <p class="text-sm text-gray-600 mb-4">This is the URL you'll share for customers to leave reviews. You can customize the last part to make it fit your brand.</p>
                         <div class="form-control">
                             <div class="flex items-center">
                                 <span class="mr-2">{{ request.host_url }}review/</span>
                                 <input type="text" id="custom_url" name="custom_url" value="{{ current_user.custom_url }}" class="input input-bordered flex-grow" required>
                             </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- External Review URL Section -->
+                <div class="card bg-base-100 shadow-xl mb-6">
+                    <div class="card-body">
+                        <h2 class="card-title">External Review Site URL</h2>
+                        <p class="text-sm text-gray-600 mb-4">Want customers to paste their review on an external review site like Google or Yelp? Insert the URL here and we'll show it to them after they submit their testimonial.</p>
+                        <div class="form-control mt-4">
+                            <label for="review_url" class="label">
+                                <span class="label-text">Review URL (e.g., Google My Business or Yelp profile)</span>
+                            </label>
+                            <input type="url" id="review_url" name="review_url" value="{{ profile.review_url }}" class="input input-bordered" required>
+                        </div>
+                        <div class="form-control mt-4">
+                            <label for="review_button_text" class="label">
+                                <span class="label-text">Review Button Text</span>
+                            </label>
+                            <input type="text" id="review_button_text" name="review_button_text" value="{{ profile.review_button_text or 'Post Your Review' }}" class="input input-bordered" required>
                         </div>
                     </div>
                 </div>

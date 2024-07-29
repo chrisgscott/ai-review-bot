@@ -1,11 +1,30 @@
 {% extends "base_public.html" %}
-
-{% block title %}Testimonial Submitted{% endblock %}
-
 {% block content %}
-<div class="text-center">
-    <h1 class="text-3xl font-bold mb-6">Thank You!</h1>
-    <p class="mb-6">Your testimonial has been successfully submitted. We appreciate your feedback!</p>
-    <a href="{{ url_for('index') }}" class="btn btn-primary">Back to Home</a>
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold mb-4">Thank You for Your Testimonial!</h1>
+    <p class="mb-6">We've summarized your feedback. If you're happy with it, please consider sharing it on our review page.</p>
+    
+    <div class="bg-base-200 p-4 rounded-lg mb-6">
+        <h2 class="text-xl font-semibold mb-2">Your Testimonial Summary:</h2>
+        <p id="testimonial-summary" class="mb-4">{{ testimonial.summary }}</p>
+    </div>
+    
+    <div class="flex flex-row gap-4">
+        <button onclick="copyToClipboard()" class="btn btn-primary">Copy to Clipboard</button>
+        <a href="{{ business_profile.review_url }}" target="_blank" class="btn btn-secondary">{{ business_profile.review_button_text }}</a>
+    </div>
 </div>
+
+<script>
+function copyToClipboard() {
+    var summary = document.getElementById('testimonial-summary');
+    var tempTextArea = document.createElement('textarea');
+    tempTextArea.value = summary.textContent;
+    document.body.appendChild(tempTextArea);
+    tempTextArea.select();
+    document.execCommand('copy');
+    document.body.removeChild(tempTextArea);
+    alert('Copied to clipboard!');
+}
+</script>
 {% endblock %}
