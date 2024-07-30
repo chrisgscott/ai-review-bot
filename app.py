@@ -81,6 +81,7 @@ class Testimonial(db.Model):
     snippets = db.Column(db.Text, nullable=False)
     summary = db.Column(db.Text, nullable=True)
     submitted_at = db.Column(db.DateTime, default=datetime.utcnow)
+    is_displayed = db.Column(db.Boolean, default=False)
 
 class BusinessProfile(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -402,6 +403,71 @@ def all_testimonials():
 
     testimonials = query.all()
     return render_template('all_testimonials.html', testimonials=testimonials, current_sort=sort, current_order=order, search=search)
+
+@app.route('/update_testimonial_display', methods=['POST'])
+@login_required
+def update_testimonial_display():
+    data = request.json
+    testimonial_id = data.get('testimonial_id')
+    is_displayed = data.get('is_displayed')
+    
+    testimonial = Testimonial.query.get(testimonial_id)
+    if testimonial and testimonial.user_id == current_user.id:
+        testimonial.is_displayed = is_displayed
+        db.session.commit()
+        return jsonify({'status': 'success'})
+    else:
+        return jsonify({'status': 'error', 'message': 'Testimonial not found or access denied'}), 403
+    
+@app.route('/update_testimonial_summary/<int:id>', methods=['POST'])
+@login_required
+def update_testimonial_summary(id):
+    testimonial = Testimonial.query.get_or_404(id)
+    
+    # Ensure the current user owns this testimonial
+    if testimonial.user_id != current_user.id:
+        return jsonify({'status': 'error', 'message': 'Unauthorized'}), 403
+
+    data = request.json
+    new_summary = data.get('summary')
+
+    if new_summary:
+        testimonial.summary = new_summary
+        db.session.commit()
+        return jsonify({'status': 'success'})
+    else:
+        return jsonify({'status': 'error', 'message': 'No summary provided'}), 400
+
+@app.route('/embed_code')
+@login_required
+def embed_code():
+    return render_template('embed_code.html', user_id=current_user.id)
+
+@app.route('/api/testimonials/<int:user_id>')
+def get_displayed_testimonials(user_id):
+    testimonials = Testimonial.query.filter_by(user_id=user_id, is_displayed=True).all()
+    return jsonify([{
+        'id': t.id,
+        'summary': t.summary,
+        'reviewer_name': t.reviewer_name,
+        'reviewer_email': t.reviewer_email,
+        'score': t.score
+    } for t in testimonials])
+
+@app.route('/testimonial-widget/<int:user_id>')
+def testimonial_widget(user_id):
+    user = User.query.get_or_404(user_id)
+    
+    # This is where you'll implement the logic to determine if the attribution should be shown
+    # For now, we'll always show it, but you can easily change this later
+    show_attribution = True
+    
+    # Example of how you might implement this in the future:
+    # show_attribution = not user.has_paid_subscription()
+    
+    return render_template('testimonial_widget.html', 
+        user_id=user_id, 
+        show_attribution=show_attribution)
 
 @app.route('/pending_requests')
 @login_required

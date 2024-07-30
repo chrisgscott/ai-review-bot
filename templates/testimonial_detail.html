@@ -34,7 +34,13 @@
       <div class="card bg-base-100">
         <div class="card-body">
           <h2 class="card-title">AI Summary</h2>
-          <p>{{ testimonial.summary }}</p>
+          <div id="summary-display">{{ testimonial.summary }}</div>
+          <textarea id="summary-edit" class="textarea textarea-bordered w-full hidden" rows="4">{{ testimonial.summary }}</textarea>
+          <div class="mt-2">
+            <button id="edit-summary-btn" class="btn btn-sm btn-outline">Edit Summary</button>
+            <button id="save-summary-btn" class="btn btn-sm btn-primary hidden">Save Summary</button>
+            <button id="cancel-edit-btn" class="btn btn-sm btn-outline btn-error hidden">Cancel</button>
+          </div>
         </div>
       </div>
 
@@ -104,6 +110,58 @@
         });
       }
     }
+    document.addEventListener('DOMContentLoaded', function() {
+      const summaryDisplay = document.getElementById('summary-display');
+      const summaryEdit = document.getElementById('summary-edit');
+      const editBtn = document.getElementById('edit-summary-btn');
+      const saveBtn = document.getElementById('save-summary-btn');
+      const cancelBtn = document.getElementById('cancel-edit-btn');
+
+      editBtn.addEventListener('click', function() {
+        summaryDisplay.classList.add('hidden');
+        summaryEdit.classList.remove('hidden');
+        editBtn.classList.add('hidden');
+        saveBtn.classList.remove('hidden');
+        cancelBtn.classList.remove('hidden');
+      });
+
+      cancelBtn.addEventListener('click', function() {
+        summaryDisplay.classList.remove('hidden');
+        summaryEdit.classList.add('hidden');
+        editBtn.classList.remove('hidden');
+        saveBtn.classList.add('hidden');
+        cancelBtn.classList.add('hidden');
+        summaryEdit.value = summaryDisplay.textContent; // Reset to original value
+      });
+
+      saveBtn.addEventListener('click', function() {
+        const newSummary = summaryEdit.value;
+        fetch("{{ url_for('update_testimonial_summary', id=testimonial.id) }}", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ summary: newSummary }),
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.status === "success") {
+            summaryDisplay.textContent = newSummary;
+            summaryDisplay.classList.remove('hidden');
+            summaryEdit.classList.add('hidden');
+            editBtn.classList.remove('hidden');
+            saveBtn.classList.add('hidden');
+            cancelBtn.classList.add('hidden');
+          } else {
+            alert("An error occurred while updating the summary.");
+          }
+        })
+        .catch(error => {
+          console.error("Error:", error);
+          alert("An error occurred while updating the summary.");
+        });
+      });
+    });
   </script>
 </div>
 {% endblock %}

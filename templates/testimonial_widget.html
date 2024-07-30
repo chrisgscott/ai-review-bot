@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Testimonial Widget</title>
+    <link href="https://fonts.googleapis.com/css2?family=Merriweather:ital@1&family=Open+Sans:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Open Sans', Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .testimonial-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        .testimonial-card {
+            border-radius: 8px;
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+        }
+        .testimonial-content {
+            font-family: 'Merriweather', serif;
+            font-style: italic;
+            font-size: 16px;
+            line-height: 1.6;
+            color: #333;
+            margin-bottom: 15px;
+            flex-grow: 1;
+            position: relative;
+            padding-left: 40px;
+            padding-top: 10px;
+        }
+        .testimonial-content::before {
+            content: '"';
+            font-family: 'Georgia', serif;
+            font-size: 72px;
+            color: #888;
+            position: absolute;
+            top: -20px;
+            left: -5px;
+        }
+        .testimonial-footer {
+            display: flex;
+            align-items: center;
+            border-top: 1px solid #e0e0e0;
+            padding-top: 15px;
+            margin-top: 15px;
+        }
+        .testimonial-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            margin-right: 15px;
+        }
+        .testimonial-info {
+            flex-grow: 1;
+        }
+        .testimonial-author {
+            font-weight: 700;
+            color: #444;
+            margin-bottom: 5px;
+        }
+        .testimonial-rating {
+            color: #777;
+            font-weight: 400;
+        }
+        @media (max-width: 600px) {
+            .testimonial-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        .powered-by {
+            text-align: center;
+            font-size: 14px;
+            color: #888;
+            margin-top: 20px;
+        }
+        .powered-by a {
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            text-decoration: none;
+            color: inherit;
+        }
+        .powered-by img {
+            max-width: 30px;
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div id="testimonial-container"></div>
+    {% if show_attribution %}
+    <div class="powered-by">
+        <a href="https://leavesomelove.com/?ref={{ user_id }}" target="_blank" rel="noopener noreferrer">
+            <img src="{{ url_for('static', filename='images/leave-some-love-icon.png') }}" alt="Leave Some Love Icon">
+            Powered by Leave Some Love
+        </a>
+    </div>
+    {% endif %}
+    <script src="{{ url_for('static', filename='testimonial-widget.js') }}"></script>
+    <script>
+        TestimonialWidget.init({{ user_id }}, 'testimonial-container');
+
+        // Dynamic height adjustment
+        function adjustIframeHeight() {
+            const height = document.body.scrollHeight;
+            window.parent.postMessage({ type: 'resize', height: height }, '*');
+        }
+
+        // Call adjustIframeHeight after the testimonials are rendered
+        const observer = new MutationObserver((mutations) => {
+            for(let mutation of mutations) {
+                if(mutation.type === 'childList') {
+                    adjustIframeHeight();
+                    break;
+                }
+            }
+        });
+
+        observer.observe(document.getElementById('testimonial-container'), { childList: true });
+
+        // Adjust height on window resize
+        window.addEventListener('resize', adjustIframeHeight);
+    </script>
+</body>
+</html>
