@@ -80,6 +80,8 @@ class Testimonial(db.Model):
     score = db.Column(db.Float, nullable=False)
     snippets = db.Column(db.Text, nullable=False)
     summary = db.Column(db.Text, nullable=True)
+    website_quote = db.Column(db.Text, nullable=True)
+    headline = db.Column(db.String(255), nullable=True)
     submitted_at = db.Column(db.DateTime, default=datetime.utcnow)
     is_displayed = db.Column(db.Boolean, default=False)
 
@@ -437,6 +439,42 @@ def update_testimonial_summary(id):
         return jsonify({'status': 'success'})
     else:
         return jsonify({'status': 'error', 'message': 'No summary provided'}), 400
+    
+@app.route('/update_testimonial_headline/<int:id>', methods=['POST'])
+@login_required
+def update_testimonial_headline(id):
+    testimonial = Testimonial.query.get_or_404(id)
+    
+    if testimonial.user_id != current_user.id:
+        return jsonify({'status': 'error', 'message': 'Unauthorized'}), 403
+
+    data = request.json
+    new_headline = data.get('headline-text')
+
+    if new_headline:
+        testimonial.headline = new_headline
+        db.session.commit()
+        return jsonify({'status': 'success'})
+    else:
+        return jsonify({'status': 'error', 'message': 'No headline provided'}), 400
+
+@app.route('/update_testimonial_website_quote/<int:id>', methods=['POST'])
+@login_required
+def update_testimonial_website_quote(id):
+    testimonial = Testimonial.query.get_or_404(id)
+    
+    if testimonial.user_id != current_user.id:
+        return jsonify({'status': 'error', 'message': 'Unauthorized'}), 403
+
+    data = request.json
+    new_website_quote = data.get('website-quote-text')
+
+    if new_website_quote:
+        testimonial.website_quote = new_website_quote
+        db.session.commit()
+        return jsonify({'status': 'success'})
+    else:
+        return jsonify({'status': 'error', 'message': 'No website quote provided'}), 400
 
 @app.route('/embed_code')
 @login_required
@@ -449,6 +487,8 @@ def get_displayed_testimonials(user_id):
     return jsonify([{
         'id': t.id,
         'summary': t.summary,
+        'website_quote': t.website_quote,
+        'headline': t.headline,
         'reviewer_name': t.reviewer_name,
         'reviewer_email': t.reviewer_email,
         'score': t.score
@@ -618,6 +658,8 @@ def submit_testimonial():
         analysis = analyze_sentiment(full_text)
         snippets = extract_snippets(full_text)
         summary = generate_summary(full_text)
+        website_quote = generate_website_quote(full_text)
+        headline = generate_headline(full_text)
         
         # Find the user associated with the business_id or use the current user
         if business_id:
@@ -639,7 +681,9 @@ def submit_testimonial():
             sentiment=analysis['sentiment'],
             score=analysis['score'],
             snippets=', '.join(snippets),
-            summary=summary
+            summary=summary,
+            website_quote=website_quote,
+            headline=headline
         )
         
         db.session.add(testimonial)
@@ -811,6 +855,52 @@ def make_admin(user_id):
     return redirect(url_for('admin.index'))
 
 # Helper functions
+def generate_website_quote(conversation):
+    settings = Settings.get()
+    prompt = f"""
+    Create a short, impactful 1-2 sentence quote from this testimonial. 
+    Use the customer's own words and phrase it in the first person, as if the customer wrote it themselves. 
+    Focus on the most positive and compelling aspects of their experience.
+
+    Conversation:
+    {conversation}
+
+    Website Quote:
+    """
+
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+            {"role": "system", "content": "You are an AI assistant that creates short, impactful testimonial quotes in the customer's own voice."},
+            {"role": "user", "content": prompt}
+        ]
+    )
+
+    return response.choices[0].message.content.strip()
+
+def generate_headline(conversation):
+    settings = Settings.get()
+    prompt = f"""
+    Create a single-sentence headline or tagline from this testimonial. 
+    Make it catchy, impactful, and representative of the customer's experience.
+    Always use the customer's own words and phrase it in the first person, as if the customer wrote it themselves.
+
+    Conversation:
+    {conversation}
+
+    Headline:
+    """
+
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+            {"role": "system", "content": "You are an AI assistant that creates catchy, impactful headlines from testimonials."},
+            {"role": "user", "content": prompt}
+        ]
+    )
+
+    return response.choices[0].message.content.strip()
+
 def generate_custom_url(business_name):
     # Convert business name to URL-friendly format
     base_url = ''.join(e for e in business_name if e.isalnum()).lower()
