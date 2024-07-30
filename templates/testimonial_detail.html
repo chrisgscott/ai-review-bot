@@ -31,16 +31,30 @@
 
     <!-- Right column: Summary and Snippets -->
     <div class="lg:col-span-2">
+      <div class="card bg-base-100 mb-4">
+        <div class="card-body">
+          <h2 class="card-title">Headline</h2>
+          <p id="headline-text">{{ testimonial.headline }}</p>
+          <button id="edit-headline-btn" class="btn btn-sm btn-outline mt-2">Edit Headline</button>
+          <button id="save-headline-btn" class="btn btn-sm btn-primary mt-2 hidden">Save Headline</button>
+        </div>
+      </div>
+
+      <div class="card bg-base-100 mb-4">
+        <div class="card-body">
+          <h2 class="card-title">Website Quote</h2>
+          <p id="website-quote-text">{{ testimonial.website_quote }}</p>
+          <button id="edit-website-quote-btn" class="btn btn-sm btn-outline mt-2">Edit Website Quote</button>
+          <button id="save-website-quote-btn" class="btn btn-sm btn-primary mt-2 hidden">Save Website Quote</button>
+        </div>
+      </div>
+
       <div class="card bg-base-100">
         <div class="card-body">
-          <h2 class="card-title">AI Summary</h2>
-          <div id="summary-display">{{ testimonial.summary }}</div>
-          <textarea id="summary-edit" class="textarea textarea-bordered w-full hidden" rows="4">{{ testimonial.summary }}</textarea>
-          <div class="mt-2">
-            <button id="edit-summary-btn" class="btn btn-sm btn-outline">Edit Summary</button>
-            <button id="save-summary-btn" class="btn btn-sm btn-primary hidden">Save Summary</button>
-            <button id="cancel-edit-btn" class="btn btn-sm btn-outline btn-error hidden">Cancel</button>
-          </div>
+          <h2 class="card-title">Full Summary</h2>
+          <p id="summary-text">{{ testimonial.summary }}</p>
+          <button id="edit-summary-btn" class="btn btn-sm btn-outline mt-2">Edit Summary</button>
+          <button id="save-summary-btn" class="btn btn-sm btn-primary mt-2 hidden">Save Summary</button>
         </div>
       </div>
 
@@ -110,58 +124,51 @@
         });
       }
     }
-    document.addEventListener('DOMContentLoaded', function() {
-      const summaryDisplay = document.getElementById('summary-display');
-      const summaryEdit = document.getElementById('summary-edit');
-      const editBtn = document.getElementById('edit-summary-btn');
-      const saveBtn = document.getElementById('save-summary-btn');
-      const cancelBtn = document.getElementById('cancel-edit-btn');
+    function setupEditableField(textId, editBtnId, saveBtnId, updateUrl) {
+      const textElement = document.getElementById(textId);
+      const editBtn = document.getElementById(editBtnId);
+      const saveBtn = document.getElementById(saveBtnId);
+      let originalText;
 
       editBtn.addEventListener('click', function() {
-        summaryDisplay.classList.add('hidden');
-        summaryEdit.classList.remove('hidden');
+        originalText = textElement.textContent;
+        textElement.contentEditable = true;
+        textElement.focus();
         editBtn.classList.add('hidden');
         saveBtn.classList.remove('hidden');
-        cancelBtn.classList.remove('hidden');
-      });
-
-      cancelBtn.addEventListener('click', function() {
-        summaryDisplay.classList.remove('hidden');
-        summaryEdit.classList.add('hidden');
-        editBtn.classList.remove('hidden');
-        saveBtn.classList.add('hidden');
-        cancelBtn.classList.add('hidden');
-        summaryEdit.value = summaryDisplay.textContent; // Reset to original value
       });
 
       saveBtn.addEventListener('click', function() {
-        const newSummary = summaryEdit.value;
-        fetch("{{ url_for('update_testimonial_summary', id=testimonial.id) }}", {
-          method: "POST",
+        const newText = textElement.textContent;
+        fetch(updateUrl, {
+          method: 'POST',
           headers: {
-            "Content-Type": "application/json",
+            'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ summary: newSummary }),
+          body: JSON.stringify({ [textId]: newText }),
         })
         .then(response => response.json())
         .then(data => {
-          if (data.status === "success") {
-            summaryDisplay.textContent = newSummary;
-            summaryDisplay.classList.remove('hidden');
-            summaryEdit.classList.add('hidden');
+          if (data.status === 'success') {
+            textElement.contentEditable = false;
             editBtn.classList.remove('hidden');
             saveBtn.classList.add('hidden');
-            cancelBtn.classList.add('hidden');
           } else {
-            alert("An error occurred while updating the summary.");
+            alert('Failed to update. Please try again.');
+            textElement.textContent = originalText;
           }
         })
         .catch(error => {
-          console.error("Error:", error);
-          alert("An error occurred while updating the summary.");
+          console.error('Error:', error);
+          alert('An error occurred. Please try again.');
+          textElement.textContent = originalText;
         });
       });
-    });
+    }
+
+    setupEditableField('headline-text', 'edit-headline-btn', 'save-headline-btn', "{{ url_for('update_testimonial_headline', id=testimonial.id) }}");
+    setupEditableField('website-quote-text', 'edit-website-quote-btn', 'save-website-quote-btn', "{{ url_for('update_testimonial_website_quote', id=testimonial.id) }}");
+    setupEditableField('summary-text', 'edit-summary-btn', 'save-summary-btn', "{{ url_for('update_testimonial_summary', id=testimonial.id) }}");
   </script>
 </div>
 {% endblock %}

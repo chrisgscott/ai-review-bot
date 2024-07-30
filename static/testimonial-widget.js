@@ -35,7 +35,7 @@ const TestimonialWidget = {
         const gravatarUrl = this.getGravatarUrl(t.reviewer_email);
         return `
             <div class="testimonial-card">
-                <div class="testimonial-content">${this.escapeHtml(t.summary)}</div>
+                <div class="testimonial-content">${this.escapeHtml(t.website_quote)}</div>
                 <div class="testimonial-footer">
                     <img src="${gravatarUrl}" alt="${this.escapeHtml(t.reviewer_name)}" class="testimonial-avatar">
                     <div class="testimonial-info">
