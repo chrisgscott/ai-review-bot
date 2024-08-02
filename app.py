@@ -1099,5 +1099,3 @@ def create_admin(email):
         click.echo(f"User with email {email} has been promoted to admin.")
     else:
         click.echo(f"User with email {email} not found.")
-
-if __name__ == '__main__':
