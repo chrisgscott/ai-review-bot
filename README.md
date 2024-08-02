@@ -33,5 +33,5 @@ Leave Some Love is an AI-powered testimonial management platform designed to hel
 - [X] ~~Fix UndefinedError when requesting a testimonial.~~
 - [X] ~~Fix duplicate initial question when on the submit_testimonial/<customlink> chat bot.~~
 - [X] ~~Submit testimonial button doesn't function on the /submit_testimonial/<customlink> page.~~
-- [ ] ~~Not collecting first name or email address up front on the customized user URL (ex: /leavesomelove)~~
+- [X] ~~Not collecting first name or email address up front on the customized user URL (ex: /leavesomelove)~~
 - [X] ~~Fix testimonial submission error (see above issue related to custom URLs for the index.html form)~~
