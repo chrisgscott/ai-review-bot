@@ -44,10 +44,29 @@
           >Open drawer</label
         >
         <div class="p-10 w-full">
-          {% with messages = get_flashed_messages(with_categories=true) %} {% if
-          messages %} {% for category, message in messages %}
-          <div class="alert alert-{{ category }} mb-4">{{ message }}</div>
-          {% endfor %} {% endif %} {% endwith %} {% block content %}{% endblock
+          {% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div id="flash-messages">
+      {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+          {{ message }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+      {% endfor %}
+    </div>
+    <script>
+      // Clear flash messages after they've been displayed
+      window.addEventListener('load', function() {
+        var flashMessages = document.getElementById('flash-messages');
+        if (flashMessages) {
+          setTimeout(function() {
+            flashMessages.style.display = 'none';
+          }, 5000); // Hide after 5 seconds
+        }
+      });
+    </script>
+  {% endif %}
+{% endwith %} {% block content %}{% endblock
           %}
         </div>
       </div>

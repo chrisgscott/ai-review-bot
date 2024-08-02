@@ -5,51 +5,51 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Admin - Leave Some Love{% endblock %}</title>
-    <link
-      rel="stylesheet"
-      href="{{ url_for('static', filename='css/main.css') }}"
-    />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap"
-      rel="stylesheet"
-    />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.png') }}">
     <style>
-      .logo-link {
-        display: block;
-        padding: 0;
-        background-color: transparent !important;
-      }
-      .logo-link:hover,
-      .logo-link:active,
-      .logo-link:focus {
-        background-color: transparent !important;
-      }
-      .logo-link img {
-        display: block;
-        margin: 0 auto;
-      }
-      body {
-        font-family: "Outfit", sans-serif;
-      }
+        body { font-family: "Outfit", sans-serif; }
+        .logo-link {
+            display: block;
+            padding: 0;
+            background-color: transparent !important;
+        }
+        .logo-link:hover,
+        .logo-link:active,
+        .logo-link:focus {
+            background-color: transparent !important;
+        }
+        .logo-link img {
+            display: block;
+            margin: 0 auto;
+        }
     </style>
     {% block extra_css %}{% endblock %}
 </head>
 <body>
     <div class="drawer lg:drawer-open bg-base-200">
-        <input id="my-drawer-2" type="checkbox" class="drawer-toggle" />
+        <input id="my-drawer-2" type="checkbox" class="drawer-toggle">
         <div class="drawer-content flex flex-col">
-            <!-- <div class="navbar bg-base-200">
-                <div class="flex-none lg:hidden">
-                    <label for="my-drawer-2" class="btn btn-square btn-ghost">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-6 h-6 stroke-current"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
-                    </label>
-                </div>
-                
-            </div> -->
             <div class="p-8 bg-base-200">
+                <!-- Flash messages -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        <div id="admin-flash-messages">
+                            {% for category, message in messages %}
+                                {% if category.startswith('admin-') %}
+                                    <div class="alert alert-{{ category[6:] }} alert-dismissible fade show mb-4" role="alert">
+                                        {{ message }}
+                                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                    </div>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                {% endwith %}
+
                 {% block content %}{% endblock %}
             </div>
         </div> 
@@ -58,13 +58,9 @@
             <ul class="menu p-4 w-80 h-full bg-base-100 text-base-content">
                 <li class="mb-6">
                     <a href="{{ url_for('dashboard') }}" class="logo-link">
-                      <img
-                        src="{{ url_for('static', filename='images/leave-some-love-icon.png') }}"
-                        alt="Leave Some Love Logo"
-                        class="w-full max-w-[40px]"
-                      />
+                        <img src="{{ url_for('static', filename='images/leave-some-love-icon.png') }}" alt="Leave Some Love Logo" class="w-full max-w-[40px]">
                     </a>
-                  </li>
+                </li>
                 <li><a href="{{ url_for('admin.index') }}">Dashboard</a></li>
                 <li><a href="{{ url_for('admin.users') }}">Users</a></li>
                 <li><a href="{{ url_for('admin.testimonials') }}">Testimonials</a></li>
@@ -74,5 +70,16 @@
         </div>
     </div>
     {% block extra_js %}{% endblock %}
+    <script>
+        // Clear admin flash messages after they've been displayed
+        window.addEventListener('load', function() {
+            var adminFlashMessages = document.getElementById('admin-flash-messages');
+            if (adminFlashMessages) {
+                setTimeout(function() {
+                    adminFlashMessages.style.display = 'none';
+                }, 5000); // Hide after 5 seconds
+            }
+        });
+    </script>
 </body>
 </html>

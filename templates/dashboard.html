@@ -3,67 +3,75 @@
 {% block content %}
 
 <div class="container mx-auto px-4">
-    <h1 class="text-3xl font-bold mb-6">Dashboard</h1>
+    <h1 id="dashboard" class="text-3xl font-bold mb-6">Dashboard</h1>
 
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
         <div class="card bg-base-300">
-            <div class="card-body">
-                <h2 class="card-title">Total Testimonials</h2>
+            <div class="card-body flex flex-col items-center justify-center text-center">
+                <h2 id="total-testimonials" class="card-title mb-2">Total Testimonials</h2>
                 <p class="text-4xl font-bold">{{ total_testimonials }}</p>
             </div>
         </div>
 
         <div class="card bg-base-300">
-            <div class="card-body">
-                <h2 class="card-title">Pending Requests</h2>
+            <div class="card-body flex flex-col items-center justify-center text-center">
+                <h2 id="pending-requests" class="card-title mb-2">Pending Requests</h2>
                 <p class="text-4xl font-bold">{{ pending_requests }}</p>
             </div>
         </div>
 
         <div class="card bg-base-300">
-            <div class="card-body">
-                <h2 class="card-title">Average Sentiment</h2>
+            <div class="card-body flex flex-col items-center justify-center text-center">
+                <h2 id="average-sentiment" class="card-title mb-2">Average Sentiment</h2>
                 <p class="text-4xl font-bold">{{ average_sentiment | round(2) }}</p>
             </div>
         </div>
     </div>
-    
+
     <div class="card bg-base-100 mb-6 border border-base-200 shadow-md">
         <div class="card-body">
-            <h2 class="card-title">Your Custom Testimonial URL</h2>
-            <p class="mb-3">This is where you'll send people to submit their testimonials.</p>
+            <h2 id="your-custom-testimonial-url" class="card-title">Your Custom Testimonial URL</h2>
+            <p>This is where you'll send people to submit their testimonials.</p>
             <div class="flex items-center">
-                <input type="text" value="{{ url_for('custom_review', custom_url=current_user.custom_url, _external=True) }}" class="input input-bordered flex-grow mr-2" id="custom-url" readonly>
-                <button onclick="copyToClipboard()" class="btn btn-primary mr-2 px-8" id="copyButton">Copy</button>
+                {% if current_user.custom_url %}
+                    <input type="text" value="{{ url_for('custom_review', custom_url=current_user.custom_url, _external=True) }}" class="input input-bordered flex-grow mr-2" id="custom-url" readonly>
+                {% else %}
+                    <input type="text" value="Click Edit to set your custom URL." class="input input-bordered flex-grow mr-2" id="custom-url" readonly>
+                {% endif %}
+                <button class="btn btn-primary mr-2 px-8" onclick="copyToClipboard()">Copy</button>
                 <a href="{{ url_for('profile') }}" class="btn btn-outline btn-primary px-8">Edit</a>
             </div>
         </div>
     </div>
 
     <div class="mt-8 bg-base-100 p-8 rounded-lg">
-        <h2 class="text-2xl font-bold mb-4">Recent Testimonials</h2>
-        <div class="overflow-x-auto">
-            <table class="table w-full">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Summary</th>
-                        <th>Sentiment</th>
-                        <th>Score</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for testimonial in recent_testimonials %}
-                    <tr class="hover:bg-base-100 cursor-pointer" onclick="window.location='{{ url_for('testimonial_detail', id=testimonial.id) }}'">
-                        <td>{{ testimonial.id }}</td>
-                        <td>{{ testimonial.summary[:100] }}...</td>
-                        <td>{{ testimonial.sentiment }}</td>
-                        <td>{{ testimonial.score }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+        <h2 id="recent-testimonials" class="text-2xl font-bold mb-4">Recent Testimonials</h2>
+        {% if recent_testimonials %}
+            <div class="overflow-x-auto">
+                <table class="table w-full">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Summary</th>
+                            <th>Sentiment</th>
+                            <th>Score</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for testimonial in recent_testimonials %}
+                        <tr>
+                            <td>{{ testimonial.id }}</td>
+                            <td>{{ testimonial.summary[:100] }}...</td>
+                            <td>{{ testimonial.sentiment }}</td>
+                            <td>{{ testimonial.score }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p>No testimonials yet. Start collecting feedback to see testimonials here!</p>
+        {% endif %}
     </div>
 </div>
 

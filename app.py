@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, url_for, redirect, flash, Blueprint
+from flask import Flask, render_template, request, jsonify, session, url_for, redirect, flash, Blueprint
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from flask_bcrypt import Bcrypt
@@ -19,8 +19,11 @@ import click
 from werkzeug.security import generate_password_hash
 import string
 import random
+import requests
 from sqlalchemy.exc import IntegrityError
 from flask_migrate import Migrate
+from itsdangerous import URLSafeTimedSerializer, SignatureExpired
+
 
 logging.basicConfig(level=logging.INFO)
 
@@ -38,6 +41,9 @@ app.config['BREVO_API_KEY'] = os.getenv('BREVO_API_KEY')
 if not app.config['SECRET_KEY']:
     raise ValueError("No SECRET_KEY set for Flask application")
 
+# Initialize the serializer
+s = URLSafeTimedSerializer(app.config['SECRET_KEY'])
+
 db = SQLAlchemy(app)
 bcrypt = Bcrypt(app)
 login_manager = LoginManager(app)
@@ -52,6 +58,12 @@ configuration = sib_api_v3_sdk.Configuration()
 configuration.api_key['api-key'] = app.config['BREVO_API_KEY']
 api_instance = sib_api_v3_sdk.TransactionalEmailsApi(sib_api_v3_sdk.ApiClient(configuration))
 
+@app.after_request
+def after_request(response):
+    # Clear flash messages after each request
+    session.pop('_flashes', None)
+    return response
+
 # Models
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
@@ -63,15 +75,17 @@ class User(UserMixin, db.Model):
     login_count = db.Column(db.Integer, default=0)
     custom_url = db.Column(db.String(120), unique=True, nullable=True)
 
-    testimonials = db.relationship('Testimonial', backref='user', lazy=True)
-    business_profile = db.relationship('BusinessProfile', uselist=False, back_populates='user')
+    testimonials = db.relationship('Testimonial', backref='user', lazy=True, cascade='all, delete-orphan')
+    business_profile = db.relationship('BusinessProfile', uselist=False, back_populates='user', cascade='all, delete-orphan')
+    testimonial_requests = db.relationship('TestimonialRequest', backref='user', lazy=True, cascade='all, delete-orphan')
+    chatbot_logs = db.relationship('ChatbotLog', backref='user', lazy=True, cascade='all, delete-orphan')
 
     def __repr__(self):
         return f'<User {self.email}>'
     
 class Testimonial(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='CASCADE'), nullable=False)
     reviewer_name = db.Column(db.String(100), nullable=True)
     reviewer_email = db.Column(db.String(120), nullable=True)
     questions = db.Column(db.Text, nullable=False)
@@ -92,7 +106,7 @@ class BusinessProfile(db.Model):
     testimonial_guidance = db.Column(db.Text, nullable=False)
     review_url = db.Column(db.String(255), nullable=True)
     review_button_text = db.Column(db.String(100), nullable=True, default="Post Your Review")
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='CASCADE'), nullable=False)
     user = db.relationship('User', back_populates='business_profile')
 
 class TestimonialRequest(db.Model):
@@ -100,13 +114,13 @@ class TestimonialRequest(db.Model):
     email = db.Column(db.String(120), nullable=False)
     first_name = db.Column(db.String(50), nullable=False)
     unique_id = db.Column(db.String(36), unique=True, nullable=False)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='CASCADE'), nullable=False)
     submitted = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)  # Add this line
 
 class ChatbotLog(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='CASCADE'), nullable=False)
     interaction_date = db.Column(db.DateTime, default=datetime.utcnow)
     initial_request = db.Column(db.Text, nullable=False)
     follow_up_questions = db.Column(db.Text, nullable=True)
@@ -133,7 +147,7 @@ admin = Blueprint('admin', __name__, url_prefix='/admin')
 @login_required
 def require_admin():
     if not current_user.is_admin:
-        flash('You do not have permission to access the admin area.', 'danger')
+        flash('You do not have permission to access the admin area.', 'admin-danger')
         return redirect(url_for('index'))
 
 @admin.route('/')
@@ -207,7 +221,7 @@ def edit_user(user_id):
         user.email = request.form['email']
         user.is_admin = 'is_admin' in request.form
         db.session.commit()
-        flash('User updated successfully', 'success')
+        flash('User updated successfully', 'admin-success')
         return redirect(url_for('admin.users'))
     return render_template('admin/edit_user.html', user=user)
 
@@ -221,13 +235,13 @@ def create_user():
         
         existing_user = User.query.filter_by(email=email).first()
         if existing_user:
-            flash('Email already exists', 'danger')
+            flash('Email already exists', 'admin-danger')
         else:
             hashed_password = generate_password_hash(password)
             new_user = User(email=email, password=hashed_password, is_admin=is_admin)
             db.session.add(new_user)
             db.session.commit()
-            flash('User created successfully', 'success')
+            flash('User created successfully', 'admin-success')
             return redirect(url_for('admin.users'))
     return render_template('admin/create_user.html')
 
@@ -242,7 +256,7 @@ def edit_testimonial(testimonial_id):
         testimonial.score = float(request.form['score'])
         testimonial.summary = request.form['summary']
         db.session.commit()
-        flash('Testimonial updated successfully', 'success')
+        flash('Testimonial updated successfully', 'admin-success')
         return redirect(url_for('admin.testimonials'))
     return render_template('admin/edit_testimonial.html', testimonial=testimonial)
 
@@ -256,13 +270,18 @@ def delete_confirmation(item_type, item_id):
         item = Testimonial.query.get_or_404(item_id)
         cancel_url = url_for('admin.testimonials')
     else:
-        flash('Invalid item type', 'danger')
+        flash('Invalid item type', 'admin-danger')
         return redirect(url_for('admin.index'))
     
     if request.method == 'POST':
-        db.session.delete(item)
-        db.session.commit()
-        flash(f'{item_type.capitalize()} deleted successfully', 'success')
+        try:
+            db.session.delete(item)
+            db.session.commit()
+            flash(f'{item_type.capitalize()} deleted successfully', 'admin-success')
+        except Exception as e:
+            db.session.rollback()
+            app.logger.error(f"Error deleting {item_type}: {str(e)}")
+            flash(f'An error occurred while deleting the {item_type}. Please try again.', 'admin-danger')
         return redirect(cancel_url)
     
     return render_template('admin/delete_confirmation.html', 
@@ -287,7 +306,7 @@ def settings():
         settings.sentiment_prompt = request.form['sentiment_prompt']
         settings.snippet_prompt = request.form['snippet_prompt']
         db.session.commit()
-        flash('Settings updated successfully', 'success')
+        flash('Settings updated successfully', 'admin-success')
         return redirect(url_for('admin.settings'))
     
     return render_template('admin/settings.html', settings=settings)
@@ -337,6 +356,9 @@ def register():
             flash('Email already exists.', 'danger')
     return render_template('register.html')
 
+def generate_default_custom_url(user_id):
+    return f"user-{user_id}"
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -347,6 +369,11 @@ def login():
             login_user(user)
             user.last_login = datetime.utcnow()
             user.login_count += 1
+            
+            # Check if custom_url is set, if not, set a default
+            if not user.custom_url:
+                user.custom_url = generate_default_custom_url(user.id)
+            
             db.session.commit()
             flash('Logged in successfully.', 'success')
             return redirect(url_for('dashboard'))
@@ -360,13 +387,66 @@ def logout():
     flash('Logged out successfully.', 'success')
     return redirect(url_for('login'))
 
+@app.route('/reset_password_request', methods=['GET', 'POST'])
+def reset_password_request():
+    if request.method == 'POST':
+        email = request.form.get('email')
+        user = User.query.filter_by(email=email).first()
+        if user:
+            token = s.dumps(user.email, salt='password-reset-salt')
+            reset_url = url_for('reset_password', token=token, _external=True)
+            
+            # Brevo email sending
+            send_smtp_email = sib_api_v3_sdk.SendSmtpEmail(
+                to=[{"email": user.email}],
+                template_id=3,  # Replace with your actual template ID for password reset
+                params={
+                    "reset_link": reset_url
+                }
+            )
+
+            try:
+                api_response = api_instance.send_transac_email(send_smtp_email)
+                flash('Password reset link has been sent to your email.', 'info')
+            except ApiException as e:
+                flash('Failed to send password reset email. Please try again later.', 'danger')
+            
+        else:
+            flash('Email not found.', 'danger')
+        return redirect(url_for('login'))
+    return render_template('reset_password_request.html')
+
+@app.route('/reset_password/<token>', methods=['GET', 'POST'])
+def reset_password(token):
+    try:
+        email = s.loads(token, salt='password-reset-salt', max_age=3600)  # Token expires in 1 hour
+    except SignatureExpired:
+        flash('The reset link is expired.', 'danger')
+        return redirect(url_for('reset_password_request'))
+    
+    user = User.query.filter_by(email=email).first()
+
+    if request.method == 'POST':
+        password = request.form.get('password')
+        password_confirm = request.form.get('password_confirm')
+        if password == password_confirm:
+            user.password = bcrypt.generate_password_hash(password).decode('utf-8')
+            db.session.commit()
+            flash('Your password has been updated!', 'success')
+            return redirect(url_for('login'))
+        else:
+            flash('Passwords do not match.', 'danger')
+
+    return render_template('reset_password.html', token=token)
+
+
 @app.route('/dashboard')
 @login_required
 def dashboard():
-    total_testimonials = Testimonial.query.count()
-    pending_requests = TestimonialRequest.query.filter_by(submitted=False).count()
-    average_sentiment = db.session.query(db.func.avg(Testimonial.score)).scalar() or 0
-    recent_testimonials = Testimonial.query.order_by(Testimonial.id.desc()).limit(5).all()
+    total_testimonials = Testimonial.query.filter_by(user_id=current_user.id).count()
+    pending_requests = TestimonialRequest.query.filter_by(user_id=current_user.id, submitted=False).count()
+    average_sentiment = db.session.query(db.func.avg(Testimonial.score)).filter(Testimonial.user_id == current_user.id).scalar() or 0
+    recent_testimonials = Testimonial.query.filter_by(user_id=current_user.id).order_by(Testimonial.id.desc()).limit(5).all()
     
     return render_template('dashboard.html', 
                            total_testimonials=total_testimonials,
@@ -829,7 +909,7 @@ def confirmation(testimonial_id):
 @app.route('/delete_testimonial/<int:id>', methods=['POST'])
 @login_required
 def delete_testimonial(id):
-    testimonial = Testimonial.query.get_or_404(id)
+    testimonial = Testimonial.query.filter_by(id=id, user_id=current_user.id).first_or_404()
     db.session.delete(testimonial)
     db.session.commit()
     return jsonify({'status': 'success'})
@@ -837,7 +917,7 @@ def delete_testimonial(id):
 @app.route('/testimonial/<int:id>')
 @login_required
 def testimonial_detail(id):
-    testimonial = Testimonial.query.get_or_404(id)
+    testimonial = Testimonial.query.filter_by(id=id, user_id=current_user.id).first_or_404()
     gravatar_url = get_gravatar_url(testimonial.reviewer_email) if testimonial.reviewer_email else None
     return render_template('testimonial_detail.html', testimonial=testimonial, gravatar_url=gravatar_url, zip=zip)
 
@@ -914,6 +994,9 @@ def generate_custom_url(business_name):
         if User.query.filter_by(custom_url=custom_url).first() is None:
             return custom_url
         
+def generate_default_custom_url(user_id):
+    return f"user-{user_id}"
+
 def get_gravatar_url(email, size=100):
     """Generate Gravatar URL for the given email."""
     email = email.lower().encode('utf-8')
