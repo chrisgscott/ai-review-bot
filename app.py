@@ -29,7 +29,7 @@ load_dotenv()
 
 app = Flask(__name__)
 app.config.from_object(Config)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///testimonials.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('SQLALCHEMY_DATABASE_URI')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = os.getenv('FLASK_SECRET_KEY')
 app.config['BREVO_API_KEY'] = os.getenv('BREVO_API_KEY')
@@ -54,9 +54,9 @@ api_instance = sib_api_v3_sdk.TransactionalEmailsApi(sib_api_v3_sdk.ApiClient(co
 
 # Models
 class User(UserMixin, db.Model):
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     email = db.Column(db.String(120), unique=True, nullable=False)
-    password = db.Column(db.String(120), nullable=False)
+    password = db.Column(db.String(255), nullable=False)
     is_admin = db.Column(db.Boolean, default=False)
     registration_date = db.Column(db.DateTime, default=datetime.utcnow)
     last_login = db.Column(db.DateTime)
@@ -70,7 +70,7 @@ class User(UserMixin, db.Model):
         return f'<User {self.email}>'
     
 class Testimonial(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     reviewer_name = db.Column(db.String(100), nullable=True)
     reviewer_email = db.Column(db.String(120), nullable=True)
@@ -86,7 +86,7 @@ class Testimonial(db.Model):
     is_displayed = db.Column(db.Boolean, default=False)
 
 class BusinessProfile(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     business_name = db.Column(db.String(100), nullable=False)
     business_description = db.Column(db.Text, nullable=False)
     testimonial_guidance = db.Column(db.Text, nullable=False)
@@ -96,7 +96,7 @@ class BusinessProfile(db.Model):
     user = db.relationship('User', back_populates='business_profile')
 
 class TestimonialRequest(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     email = db.Column(db.String(120), nullable=False)
     first_name = db.Column(db.String(50), nullable=False)
     unique_id = db.Column(db.String(36), unique=True, nullable=False)
@@ -105,7 +105,7 @@ class TestimonialRequest(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)  # Add this line
 
 class ChatbotLog(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     interaction_date = db.Column(db.DateTime, default=datetime.utcnow)
     initial_request = db.Column(db.Text, nullable=False)
@@ -113,7 +113,7 @@ class ChatbotLog(db.Model):
     user_responses = db.Column(db.Text, nullable=True)
 
 class Settings(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     site_name = db.Column(db.String(100), nullable=False, default="Leave Some Love")
     contact_email = db.Column(db.String(120), nullable=False, default="contact@leavesomelove.com")
     testimonial_approval_required = db.Column(db.Boolean, nullable=False, default=False)
