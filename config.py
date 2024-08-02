@@ -7,3 +7,4 @@ class Config:
     APPLICATION_NAME = "Leave Some Love"
     SECRET_KEY = os.getenv('FLASK_SECRET_KEY')
     OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
+    SECRET_KEY = os.getenv('SECRET_KEY')

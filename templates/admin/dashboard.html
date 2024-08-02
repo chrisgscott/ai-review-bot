@@ -5,21 +5,21 @@
 <h1 class="text-3xl font-bold mb-6">Admin Dashboard</h1>
 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
     <div class="card bg-base-300 border border-base-300 rounded-lg">
-        <div class="card-body">
-            <h2 class="card-title">Total Users</h2>
-            <p class="text-4xl">{{ total_users }}</p>
+        <div class="card-body flex flex-col items-center justify-center text-center">
+            <h2 class="card-title mb-2">Total Users</h2>
+            <p class="text-4xl font-bold">{{ total_users }}</p>
         </div>
     </div>
     <div class="card bg-base-300 border border-base-300 rounded-lg">
-        <div class="card-body">
-            <h2 class="card-title">Total Testimonials</h2>
-            <p class="text-4xl">{{ total_testimonials }}</p>
+        <div class="card-body flex flex-col items-center justify-center text-center">
+            <h2 class="card-title mb-2">Total Testimonials</h2>
+            <p class="text-4xl font-bold">{{ total_testimonials }}</p>
         </div>
     </div>
     <div class="card bg-base-300 border border-base-300 rounded-lg">
-        <div class="card-body">
-            <h2 class="card-title">Average Sentiment</h2>
-            <p class="text-4xl">{{ avg_sentiment | round(2) }}</p>
+        <div class="card-body flex flex-col items-center justify-center text-center">
+            <h2 class="card-title mb-2">Average Sentiment</h2>
+            <p class="text-4xl font-bold">{{ avg_sentiment | round(2) }}</p>
         </div>
     </div>
 </div>
