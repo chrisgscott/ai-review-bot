@@ -1,8 +1,9 @@
-app = "leave-some-love"
-primary_region = "sjc"
+# fly.toml app configuration file for leave-some-love
+
+app = 'leave-some-love'
+primary_region = 'sjc'
 
 [build]
-  builder = "paketobuildpacks/builder:base"
 
 [env]
   PORT = "8080"
@@ -13,15 +14,9 @@ primary_region = "sjc"
   auto_stop_machines = true
   auto_start_machines = true
   min_machines_running = 1
-  max_machines_running = 3
-  processes = ["app"]
-
-[http_service.concurrency]
-  type = "connections"
-  hard_limit = 550
-  soft_limit = 500
+  processes = ['app']
 
 [[vm]]
-  cpu_kind = "shared"
+  memory = '1gb'
+  cpu_kind = 'shared'
   cpus = 1
-  memory_mb = 256
