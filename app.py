@@ -1,6 +1,3 @@
-Certainly! Here's the full updated content of your `app.py` file with all suggested improvements incorporated:
-
-```python
 from flask import Flask, render_template, request, jsonify, session, url_for, redirect, flash, Blueprint
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
