@@ -24,6 +24,7 @@ from sqlalchemy.exc import IntegrityError
 from flask_migrate import Migrate
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired
 
+
 logging.basicConfig(level=logging.INFO)
 
 # Load environment variables from .env file
@@ -34,7 +35,6 @@ app.config.from_object(Config)
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
 if app.config['SQLALCHEMY_DATABASE_URI'].startswith("postgres://"):
     app.config['SQLALCHEMY_DATABASE_URI'] = app.config['SQLALCHEMY_DATABASE_URI'].replace("postgres://", "postgresql://", 1)
-app.config['SQLALCHEMY_DATABASE_URI'] += "?client_encoding=utf8"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = os.getenv('FLASK_SECRET_KEY')
 app.config['BREVO_API_KEY'] = os.getenv('BREVO_API_KEY')
@@ -118,7 +118,7 @@ class TestimonialRequest(db.Model):
     unique_id = db.Column(db.String(36), unique=True, nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='CASCADE'), nullable=False)
     submitted = db.Column(db.Boolean, default=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)  # Add this line
 
 class ChatbotLog(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
@@ -441,6 +441,7 @@ def reset_password(token):
 
     return render_template('reset_password.html', token=token)
 
+
 @app.route('/dashboard')
 @login_required
 def dashboard():
@@ -456,10 +457,13 @@ def dashboard():
                            recent_testimonials=recent_testimonials,
                            current_user=current_user)
 
+
 @app.route('/new_testimonial')
 @login_required
 def new_testimonial():
     return render_template('new_testimonial.html')
+
+from sqlalchemy import desc
 
 @app.route('/all_testimonials')
 @login_required
@@ -1063,16 +1067,10 @@ def generate_follow_up_question(conversation_history, profile):
     """
 
     # Format the core instructions
-    try:
-        core_instructions = settings.follow_up_prompt.format(
-            business_name=business_name,
-            testimonial_guidance=testimonial_guidance,
-        )
-    except KeyError as e:
-        app.logger.warning(f"KeyError in formatting follow_up_prompt: {str(e)}")
-        # Fallback to a simple string replacement
-        core_instructions = settings.follow_up_prompt.replace('{business_name}', business_name)
-        core_instructions = core_instructions.replace('{testimonial_guidance}', testimonial_guidance)
+    core_instructions = settings.follow_up_prompt.format(
+        business_name=business_name,
+        testimonial_guidance=testimonial_guidance
+    )
 
     # Construct the full prompt
     full_prompt = f"""
@@ -1144,6 +1142,3 @@ def create_admin(email):
         click.echo(f"User with email {email} has been promoted to admin.")
     else:
         click.echo(f"User with email {email} not found.")
-
-if __name__ == '__main__':
-    app.run(debug=True)
