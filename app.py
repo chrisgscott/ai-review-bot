@@ -892,23 +892,29 @@ def get_next_question():
         data = request.get_json()
         conversation_history = data['conversation_history']
         
-        # Fetch the business profile
-        profile = BusinessProfile.query.first()
+        app.logger.info("Fetching business profile...")
+        profile = None
+        try:
+            profile = BusinessProfile.query.first()
+            app.logger.info(f"Profile fetched: {profile}")
+        except Exception as db_error:
+            app.logger.error(f"Error fetching profile: {str(db_error)}")
         
-        # If no profile exists, create a default one
         if profile is None:
-            profile = BusinessProfile(
-                business_name="Our Business",
-                business_description="A business dedicated to customer satisfaction",
-                testimonial_guidance="Focus on quality of service and customer experience"
-            )
+            app.logger.warning("No profile found, creating a default one")
+            profile = {
+                'business_name': "Our Business",
+                'business_description': "A business dedicated to customer satisfaction",
+                'testimonial_guidance': "Focus on quality of service and customer experience"
+            }
         
-        # Generate the next question
+        app.logger.info("Generating follow-up question...")
         next_question = generate_follow_up_question(conversation_history, profile)
         
+        app.logger.info("Question generated successfully")
         return jsonify({'question': next_question})
     except Exception as e:
-        app.logger.error(f"Error in get_next_question: {str(e)}")
+        app.logger.error(f"Error in get_next_question: {str(e)}", exc_info=True)
         return jsonify({'status': 'error', 'message': 'An error occurred while getting the next question'}), 500
 
 @app.route('/confirmation/<int:testimonial_id>')
@@ -1040,12 +1046,18 @@ def generate_summary(conversation):
 def generate_follow_up_question(conversation_history, profile):
     settings = Settings.get()
     
-    business_name = getattr(profile, 'business_name', 'the business')
-    testimonial_guidance = getattr(profile, 'testimonial_guidance', 'the business strengths')
+    if isinstance(profile, dict):
+        business_name = profile.get('business_name', 'the business')
+        business_description = profile.get('business_description', 'No description provided')
+        testimonial_guidance = profile.get('testimonial_guidance', 'the business strengths')
+    else:
+        business_name = getattr(profile, 'business_name', 'the business')
+        business_description = getattr(profile, 'business_description', 'No description provided')
+        testimonial_guidance = getattr(profile, 'testimonial_guidance', 'the business strengths')
     
     business_context = f"""
     Business Name: {business_name}
-    Business Description: {getattr(profile, 'business_description', 'No description provided')}
+    Business Description: {business_description}
     Testimonial Guidance: {testimonial_guidance}
     """
 
@@ -1068,6 +1080,7 @@ def generate_follow_up_question(conversation_history, profile):
     Follow-up question:
     """
 
+    app.logger.info("Sending request to OpenAI...")
     response = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[
@@ -1075,6 +1088,7 @@ def generate_follow_up_question(conversation_history, profile):
             {"role": "user", "content": full_prompt}
         ]
     )
+    app.logger.info("Received response from OpenAI")
 
     return response.choices[0].message.content.strip()
 
