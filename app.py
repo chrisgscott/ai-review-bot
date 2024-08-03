@@ -1028,6 +1028,10 @@ def generate_summary(conversation):
 
 def generate_follow_up_question(conversation_history, profile):
     settings = Settings.get()
+    
+    business_name = profile.business_name if profile else 'the business'
+    testimonial_guidance = profile.testimonial_guidance if profile else 'the business strengths'
+    
     if profile:
         business_context = f"""
         Business Name: {profile.business_name}
@@ -1037,18 +1041,30 @@ def generate_follow_up_question(conversation_history, profile):
     else:
         business_context = "No specific business information provided."
 
-    # Replace placeholders in the prompt
-    prompt = settings.follow_up_prompt.format(
-        profile=profile,
-        business_context=business_context,
-        conversation_history=conversation_history
+    # Format the core instructions
+    core_instructions = settings.follow_up_prompt.format(
+        business_name=business_name,
+        testimonial_guidance=testimonial_guidance
     )
+
+    # Construct the full prompt
+    full_prompt = f"""
+    {core_instructions}
+
+    Business Context:
+    {business_context}
+
+    Conversation history:
+    {conversation_history}
+
+    Follow-up question:
+    """
 
     response = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[
             {"role": "system", "content": "You are an AI assistant designed to generate follow-up questions for customer testimonials. Your goal is to elicit responses that would make compelling, positive, and specific testimonials for marketing purposes."},
-            {"role": "user", "content": prompt}
+            {"role": "user", "content": full_prompt}
         ]
     )
 
