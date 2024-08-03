@@ -892,7 +892,18 @@ def get_next_question():
         data = request.get_json()
         conversation_history = data['conversation_history']
         
+        # Fetch the business profile
         profile = BusinessProfile.query.first()
+        
+        # If no profile exists, create a default one
+        if profile is None:
+            profile = BusinessProfile(
+                business_name="Our Business",
+                business_description="A business dedicated to customer satisfaction",
+                testimonial_guidance="Focus on quality of service and customer experience"
+            )
+        
+        # Generate the next question
         next_question = generate_follow_up_question(conversation_history, profile)
         
         return jsonify({'question': next_question})
@@ -1029,17 +1040,14 @@ def generate_summary(conversation):
 def generate_follow_up_question(conversation_history, profile):
     settings = Settings.get()
     
-    business_name = profile.business_name if profile else 'the business'
-    testimonial_guidance = profile.testimonial_guidance if profile else 'the business strengths'
+    business_name = getattr(profile, 'business_name', 'the business')
+    testimonial_guidance = getattr(profile, 'testimonial_guidance', 'the business strengths')
     
-    if profile:
-        business_context = f"""
-        Business Name: {profile.business_name}
-        Business Description: {profile.business_description}
-        Testimonial Guidance: {profile.testimonial_guidance}
-        """
-    else:
-        business_context = "No specific business information provided."
+    business_context = f"""
+    Business Name: {business_name}
+    Business Description: {getattr(profile, 'business_description', 'No description provided')}
+    Testimonial Guidance: {testimonial_guidance}
+    """
 
     # Format the core instructions
     core_instructions = settings.follow_up_prompt.format(
