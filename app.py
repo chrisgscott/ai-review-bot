@@ -1,3 +1,6 @@
+Certainly! Here's the full updated content of your `app.py` file with all suggested improvements incorporated:
+
+```python
 from flask import Flask, render_template, request, jsonify, session, url_for, redirect, flash, Blueprint
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
@@ -24,7 +27,6 @@ from sqlalchemy.exc import IntegrityError
 from flask_migrate import Migrate
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired
 
-
 logging.basicConfig(level=logging.INFO)
 
 # Load environment variables from .env file
@@ -35,6 +37,7 @@ app.config.from_object(Config)
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
 if app.config['SQLALCHEMY_DATABASE_URI'].startswith("postgres://"):
     app.config['SQLALCHEMY_DATABASE_URI'] = app.config['SQLALCHEMY_DATABASE_URI'].replace("postgres://", "postgresql://", 1)
+app.config['SQLALCHEMY_DATABASE_URI'] += "?client_encoding=utf8"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = os.getenv('FLASK_SECRET_KEY')
 app.config['BREVO_API_KEY'] = os.getenv('BREVO_API_KEY')
@@ -118,7 +121,7 @@ class TestimonialRequest(db.Model):
     unique_id = db.Column(db.String(36), unique=True, nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='CASCADE'), nullable=False)
     submitted = db.Column(db.Boolean, default=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)  # Add this line
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 class ChatbotLog(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
@@ -441,7 +444,6 @@ def reset_password(token):
 
     return render_template('reset_password.html', token=token)
 
-
 @app.route('/dashboard')
 @login_required
 def dashboard():
@@ -457,13 +459,10 @@ def dashboard():
                            recent_testimonials=recent_testimonials,
                            current_user=current_user)
 
-
 @app.route('/new_testimonial')
 @login_required
 def new_testimonial():
     return render_template('new_testimonial.html')
-
-from sqlalchemy import desc
 
 @app.route('/all_testimonials')
 @login_required
@@ -729,19 +728,19 @@ def submit_testimonial_by_link(unique_id):
 def submit_testimonial():
     try:
         data = request.get_json()
-        questions = data['questions']
-        responses = data['responses']
-        first_name = data.get('firstName')
-        email = data.get('email')
+        questions = [ensure_unicode(q) for q in data['questions']]
+        responses = [ensure_unicode(r) for r in data['responses']]
+        first_name = ensure_unicode(data.get('firstName'))
+        email = ensure_unicode(data.get('email'))
         business_id = data.get('business_id')
 
         full_text = " ".join([f"Q: {q} A: {r}" for q, r in zip(questions, responses)])
         
         analysis = analyze_sentiment(full_text)
         snippets = extract_snippets(full_text)
-        summary = generate_summary(full_text)
-        website_quote = generate_website_quote(full_text)
-        headline = generate_headline(full_text)
+        summary = ensure_unicode(generate_summary(full_text))
+        website_quote = ensure_unicode(generate_website_quote(full_text))
+        headline = ensure_unicode(generate_headline(full_text))
         
         # Find the user associated with the business_id or use the current user
         if business_id:
@@ -760,9 +759,9 @@ def submit_testimonial():
             reviewer_email=email,
             questions='\n'.join(questions),
             responses='\n'.join(responses),
-            sentiment=analysis['sentiment'],
+            sentiment=ensure_unicode(analysis['sentiment']),
             score=analysis['score'],
-            snippets=', '.join(snippets),
+            snippets=', '.join(ensure_unicode(s) for s in snippets),
             summary=summary,
             website_quote=website_quote,
             headline=headline
@@ -781,7 +780,7 @@ def submit_testimonial():
         return jsonify({'status': 'error', 'message': str(e)}), 400
     except Exception as e:
         db.session.rollback()
-        app.logger.error(f"Error in submit_testimonial: {str(e)}")
+        app.logger.error(f"Error in submit_testimonial: {str(e)}", exc_info=True)
         return jsonify({'status': 'error', 'message': 'An unexpected error occurred while submitting the testimonial'}), 500
     
 @app.route('/testimonial_requests')
@@ -954,6 +953,11 @@ def make_admin(user_id):
     return redirect(url_for('admin.index'))
 
 # Helper functions
+def ensure_unicode(text):
+    if isinstance(text, str):
+        return text.encode('utf-8', errors='ignore').decode('utf-8')
+    return text
+
 def generate_website_quote(conversation):
     settings = Settings.get()
     prompt = f"""
@@ -1062,10 +1066,16 @@ def generate_follow_up_question(conversation_history, profile):
     """
 
     # Format the core instructions
-    core_instructions = settings.follow_up_prompt.format(
-        business_name=business_name,
-        testimonial_guidance=testimonial_guidance
-    )
+    try:
+        core_instructions = settings.follow_up_prompt.format(
+            business_name=business_name,
+            testimonial_guidance=testimonial_guidance,
+        )
+    except KeyError as e:
+        app.logger.warning(f"KeyError in formatting follow_up_prompt: {str(e)}")
+        # Fallback to a simple string replacement
+        core_instructions = settings.follow_up_prompt.replace('{business_name}', business_name)
+        core_instructions = core_instructions.replace('{testimonial_guidance}', testimonial_guidance)
 
     # Construct the full prompt
     full_prompt = f"""
@@ -1097,11 +1107,11 @@ def analyze_sentiment(text):
     response = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[
-            {"role": "system", "content": settings.sentiment_prompt},
-            {"role": "user", "content": text}
+            {"role": "system", "content": ensure_unicode(settings.sentiment_prompt)},
+            {"role": "user", "content": ensure_unicode(text)}
         ]
     )
-    content = response.choices[0].message.content.strip()
+    content = ensure_unicode(response.choices[0].message.content.strip())
     
     match = re.search(r'\d+(\.\d+)?', content)
     if match:
@@ -1137,3 +1147,6 @@ def create_admin(email):
         click.echo(f"User with email {email} has been promoted to admin.")
     else:
         click.echo(f"User with email {email} not found.")
+
+if __name__ == '__main__':
+    app.run(debug=True)
