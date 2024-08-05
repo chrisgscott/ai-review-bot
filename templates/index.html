@@ -28,46 +28,14 @@
         <button onclick="getNextQuestion()" class="btn btn-secondary mr-2">Continue Chatting</button>
     </div>
     
-    <button id="submit-testimonial" onclick="submitTestimonial()" class="btn btn-primary w-full hidden">Submit Testimonial</button>
+    <button id="submit-testimonial" onclick="submitTestimonial()" class="btn btn-primary w-full" style="display: none;">Submit Testimonial</button>
 </div>
-
-<style>
-    #user-input {
-        min-height: 2.5rem;
-        max-height: 150px;
-        resize: none;
-        overflow-y: auto;
-    }
-</style>
 {% endblock %}
 
 {% block scripts %}
 <script src="{{ url_for('static', filename='chatbot.js') }}"></script>
 <script>
     const businessId = "{{ business_id }}";
-    {% if unique_id %}
-    const uniqueId = "{{ unique_id }}";
-    {% endif %}
-
-    document.addEventListener('DOMContentLoaded', function() {
-        const textarea = document.getElementById('user-input');
-
-        function autoResize() {
-            this.style.height = 'auto';
-            this.style.height = (this.scrollHeight) + 'px';
-        }
-
-        textarea.addEventListener('input', autoResize);
-
-        textarea.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                sendMessage();
-            }
-        });
-
-        // Initial call to set the correct height
-        autoResize.call(textarea);
-    });
+    // We don't need uniqueId for the custom URL page
 </script>
 {% endblock %}

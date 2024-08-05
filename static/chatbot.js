@@ -91,6 +91,11 @@ function addMessage(message, isBot = false) {
     messageDiv.appendChild(bubbleDiv);
     document.getElementById('messages').appendChild(messageDiv);
     document.getElementById('messages').scrollTop = document.getElementById('messages').scrollHeight;
+
+    // Show input area after bot message
+    if (isBot) {
+        document.getElementById('input-area').style.display = 'flex';
+    }
 }
 
 function sendMessage() {
@@ -156,7 +161,13 @@ function showSubmitOption() {
     submitOptionShown = true;
     
     document.getElementById('input-area').style.display = 'flex';
-    document.getElementById('submit-testimonial').style.display = 'block';
+    const submitButton = document.getElementById('submit-testimonial');
+    if (submitButton) {
+        submitButton.style.display = 'block';
+        console.log("Submit button shown");
+    } else {
+        console.error("Submit button not found when trying to show it");
+    }
     const actionButtons = document.getElementById('action-buttons');
     actionButtons.innerHTML = `
         <button onclick="getNextQuestion()" class="btn btn-primary mr-2">Keep Chatting</button>
@@ -164,7 +175,7 @@ function showSubmitOption() {
     actionButtons.style.display = 'flex';
 }
 
-ffunction submitTestimonial() {
+function submitTestimonial() {
     const submitButton = document.getElementById('submit-testimonial');
     const actionButtons = document.getElementById('action-buttons');
 
