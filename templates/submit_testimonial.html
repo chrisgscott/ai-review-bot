@@ -8,7 +8,7 @@
     <div id="messages" class="mb-4 h-64 overflow-y-auto">
     </div>
 
-    <div id="input-area" class="flex mb-4">
+    <div id="input-area" class="flex mb-4" style="display: none;">
         <input type="text" id="user-input" class="input input-bordered flex-grow mr-2" placeholder="Type your message...">
         <button onclick="sendMessage()" class="btn btn-primary">Send</button>
     </div>
@@ -17,16 +17,20 @@
         <button onclick="getNextQuestion()" class="btn btn-primary mr-2">Continue Chatting</button>
     </div>
 
-    <button id="submit-testimonial" onclick="submitTestimonial()" class="btn btn-secondary w-full">Submit Testimonial</button>
+    <button id="submit-testimonial" onclick="submitTestimonial()" class="btn btn-secondary w-full" style="display: none;">Submit Testimonial</button>
 </div>
 
 {% endblock %}
 
 {% block scripts %}
-<script src="{{ url_for('static', filename='js/chatbot.js') }}"></script>
+<script src="{{ url_for('static', filename='chatbot.js') }}"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        initializeChatbot("{{ first_name }}", "{{ email }}");
+        if (typeof initializeChatbot === 'function') {
+            initializeChatbot("{{ first_name }}", "{{ email }}");
+        } else {
+            console.error('initializeChatbot function not found');
+        }
     });
 </script>
 {% endblock %}
