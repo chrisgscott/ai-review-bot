@@ -972,7 +972,7 @@ def generate_website_quote(conversation):
     Focus on the most positive and compelling aspects of their experience.
 
     Conversation:
-    {conversation}
+    {ensure_unicode(conversation)}
 
     Website Quote:
     """
@@ -981,11 +981,11 @@ def generate_website_quote(conversation):
         model="gpt-4o-mini",
         messages=[
             {"role": "system", "content": "You are an AI assistant that creates short, impactful testimonial quotes in the customer's own voice."},
-            {"role": "user", "content": prompt}
+            {"role": "user", "content": ensure_unicode(prompt)}
         ]
     )
 
-    return response.choices[0].message.content.strip()
+    return ensure_unicode(response.choices[0].message.content.strip())
 
 def generate_headline(conversation):
     settings = Settings.get()
@@ -995,7 +995,7 @@ def generate_headline(conversation):
     Always use the customer's own words and phrase it in the first person, as if the customer wrote it themselves.
 
     Conversation:
-    {conversation}
+    {ensure_unicode(conversation)}
 
     Headline:
     """
@@ -1004,11 +1004,11 @@ def generate_headline(conversation):
         model="gpt-4o-mini",
         messages=[
             {"role": "system", "content": "You are an AI assistant that creates catchy, impactful headlines from testimonials."},
-            {"role": "user", "content": prompt}
+            {"role": "user", "content": ensure_unicode(prompt)}
         ]
     )
 
-    return response.choices[0].message.content.strip()
+    return ensure_unicode(response.choices[0].message.content.strip())
 
 def generate_custom_url(business_name):
     # Convert business name to URL-friendly format
@@ -1035,10 +1035,10 @@ def get_gravatar_url(email, size=100):
 def generate_summary(conversation):
     settings = Settings.get()
     prompt = f"""
-    {settings.summary_prompt}
+    {ensure_unicode(settings.summary_prompt)}
 
     Conversation:
-    {conversation}
+    {ensure_unicode(conversation)}
 
     Summary:
     """
@@ -1047,11 +1047,11 @@ def generate_summary(conversation):
         model="gpt-4o-mini",
         messages=[
             {"role": "system", "content": "You are an AI assistant that summarizes customer testimonials in the customer's own voice."},
-            {"role": "user", "content": prompt}
+            {"role": "user", "content": ensure_unicode(prompt)}
         ]
     )
 
-    return response.choices[0].message.content.strip()
+    return ensure_unicode(response.choices[0].message.content.strip())
 
 def generate_follow_up_question(conversation_history, profile):
     settings = Settings.get()
@@ -1138,12 +1138,12 @@ def extract_snippets(text):
     response = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[
-            {"role": "system", "content": settings.snippet_prompt},
-            {"role": "user", "content": text}
+            {"role": "system", "content": ensure_unicode(settings.snippet_prompt)},
+            {"role": "user", "content": ensure_unicode(text)}
         ]
     )
-    snippets = response.choices[0].message.content.strip().split('\n')
-    return [snippet.strip('- ') for snippet in snippets if snippet.strip()]
+    snippets = ensure_unicode(response.choices[0].message.content).strip().split('\n')
+    return [ensure_unicode(snippet.strip('- ')) for snippet in snippets if snippet.strip()]
 
 @app.cli.command("create-admin")
 @click.argument("email")
