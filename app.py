@@ -127,7 +127,7 @@ class TestimonialRequest(db.Model):
     unique_id = db.Column(db.String(36), unique=True, nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='CASCADE'), nullable=False)
     submitted = db.Column(db.Boolean, default=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)  # Add this line
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 class ChatbotLog(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
@@ -707,8 +707,7 @@ def submit_testimonial_by_link(unique_id):
     testimonial_request = TestimonialRequest.query.filter_by(unique_id=unique_id).first_or_404()
     
     if testimonial_request.submitted:
-        flash('This testimonial has already been submitted.', 'info')
-        return redirect(url_for('index'))
+        return render_template('testimonial_already_submitted.html')
     
     if request.method == 'POST':
         data = request.json
@@ -790,6 +789,16 @@ def submit_testimonial():
         )
         
         db.session.add(testimonial)
+
+        testimonial_request = TestimonialRequest.query.filter_by(
+            email=email,
+            user_id=user.id,
+            submitted=False
+        ).first()
+
+        if testimonial_request:
+            testimonial_request.submitted = True
+            
         db.session.commit()
         
         return jsonify({
