@@ -740,7 +740,8 @@ def submit_testimonial_by_link(unique_id):
     
     return render_template('submit_testimonial.html', 
                            first_name=testimonial_request.first_name,
-                           email=testimonial_request.email)
+                           email=testimonial_request.email,
+                           business_id=testimonial_request.user_id)
 
 @app.route('/submit_testimonial', methods=['POST'])
 def submit_testimonial():
@@ -766,16 +767,13 @@ def submit_testimonial():
         app.logger.info(f"Generated website quote (first 100 chars): {website_quote[:100]}")
         app.logger.info(f"Generated headline (first 100 chars): {headline[:100]}")
 
-        # Find the user associated with the business_id or use the current user
+        # Find the user associated with the business_id
         if business_id:
             user = User.query.get(business_id)
             if not user:
                 raise ValueError(f"Invalid business_id: {business_id}")
         else:
-            # If no business_id is provided, use the current logged-in user
-            user = current_user
-            if not user.is_authenticated:
-                raise ValueError("No valid user found for this testimonial")
+            raise ValueError("No business_id provided for this testimonial")
 
         testimonial = Testimonial(
             user_id=user.id,

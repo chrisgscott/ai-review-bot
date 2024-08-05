@@ -25,6 +25,7 @@
 {% block scripts %}
 <script src="{{ url_for('static', filename='chatbot.js') }}"></script>
 <script>
+    const businessId = "{{ business_id }}";
     document.addEventListener('DOMContentLoaded', function() {
         if (typeof initializeChatbot === 'function') {
             initializeChatbot("{{ first_name }}", "{{ email }}");
