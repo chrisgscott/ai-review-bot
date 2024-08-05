@@ -134,13 +134,18 @@ class Settings(db.Model):
     contact_email = db.Column(db.String(120), nullable=False, default="contact@leavesomelove.com")
     testimonial_approval_required = db.Column(db.Boolean, nullable=False, default=False)
     summary_prompt = db.Column(db.Text, nullable=False, default="Summarize the testimonial.")
-    follow_up_prompt = db.Column(db.Text, nullable=False, default="Generate a follow-up question.")
+    follow_up_prompt = db.Column(db.Text, nullable=False, default="Generate a follow-up question for {business_name}. Focus on {testimonial_guidance}.")
     sentiment_prompt = db.Column(db.Text, nullable=False, default="Analyze the sentiment.")
     snippet_prompt = db.Column(db.Text, nullable=False, default="Extract snippets.")
 
     @classmethod
     def get(cls):
-        return cls.query.first()
+        settings = cls.query.first()
+        if not settings:
+            settings = cls()
+            db.session.add(settings)
+            db.session.commit()
+        return settings
 
 # Admin Blueprint
 admin = Blueprint('admin', __name__, url_prefix='/admin')
@@ -298,6 +303,7 @@ def settings():
     if not settings:
         settings = Settings()
         db.session.add(settings)
+        app.logger.info("Created new Settings object")
     
     if request.method == 'POST':
         settings.site_name = request.form['site_name']
@@ -308,9 +314,11 @@ def settings():
         settings.sentiment_prompt = request.form['sentiment_prompt']
         settings.snippet_prompt = request.form['snippet_prompt']
         db.session.commit()
+        app.logger.info(f"Settings updated: follow_up_prompt = {settings.follow_up_prompt}")
         flash('Settings updated successfully', 'admin-success')
         return redirect(url_for('admin.settings'))
     
+    app.logger.info(f"Current follow_up_prompt: {settings.follow_up_prompt}")
     return render_template('admin/settings.html', settings=settings)
 
 # Register admin blueprint
@@ -893,12 +901,8 @@ def get_next_question():
         conversation_history = data['conversation_history']
         
         app.logger.info("Fetching business profile...")
-        profile = None
-        try:
-            profile = BusinessProfile.query.first()
-            app.logger.info(f"Profile fetched: {profile}")
-        except Exception as db_error:
-            app.logger.error(f"Error fetching profile: {str(db_error)}")
+        profile = BusinessProfile.query.first()
+        app.logger.info(f"Profile fetched: {profile}")
         
         if profile is None:
             app.logger.warning("No profile found, creating a default one")
@@ -916,6 +920,7 @@ def get_next_question():
     except Exception as e:
         app.logger.error(f"Error in get_next_question: {str(e)}", exc_info=True)
         return jsonify({'status': 'error', 'message': 'An error occurred while getting the next question'}), 500
+
 
 @app.route('/confirmation/<int:testimonial_id>')
 def confirmation(testimonial_id):
@@ -1050,6 +1055,8 @@ def generate_summary(conversation):
 
 def generate_follow_up_question(conversation_history, profile):
     settings = Settings.get()
+    app.logger.info(f"Settings object: {settings}")
+    app.logger.info(f"Follow-up prompt: {settings.follow_up_prompt if settings else 'None'}")
     
     if isinstance(profile, dict):
         business_name = profile.get('business_name', 'the business')
@@ -1066,11 +1073,18 @@ def generate_follow_up_question(conversation_history, profile):
     Testimonial Guidance: {testimonial_guidance}
     """
 
-    # Format the core instructions
-    core_instructions = settings.follow_up_prompt.format(
-        business_name=business_name,
-        testimonial_guidance=testimonial_guidance
-    )
+    if settings and settings.follow_up_prompt:
+        # Format the core instructions
+        core_instructions = settings.follow_up_prompt.format(
+            business_name=business_name,
+            testimonial_guidance=testimonial_guidance
+        )
+    else:
+        # Default instructions if settings are not available
+        core_instructions = f"""
+        Based on the conversation history, generate a follow-up question that will help gather more 
+        specific and positive feedback about {business_name}. Focus on {testimonial_guidance}.
+        """
 
     # Construct the full prompt
     full_prompt = f"""
