@@ -176,7 +176,8 @@ function submitTestimonial() {
         questions: askedQuestions,
         responses: responses,
         firstName: personalInfo.firstName,
-        email: personalInfo.email
+        email: personalInfo.email,
+        unique_id: uniqueId
     };
 
     if (typeof businessId !== 'undefined') {

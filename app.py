@@ -706,6 +706,7 @@ def custom_review(custom_url):
 def submit_testimonial_by_link(unique_id):
     testimonial_request = TestimonialRequest.query.filter_by(unique_id=unique_id).first_or_404()
     
+    # Check if the testimonial has already been submitted
     if testimonial_request.submitted:
         return render_template('testimonial_already_submitted.html')
     
@@ -740,7 +741,8 @@ def submit_testimonial_by_link(unique_id):
     return render_template('submit_testimonial.html', 
                            first_name=testimonial_request.first_name,
                            email=testimonial_request.email,
-                           business_id=testimonial_request.user_id)
+                           business_id=testimonial_request.user_id,
+                           unique_id=unique_id)
 
 @app.route('/submit_testimonial', methods=['POST'])
 def submit_testimonial():
@@ -751,6 +753,7 @@ def submit_testimonial():
         first_name = ensure_unicode(data.get('firstName'))
         email = ensure_unicode(data.get('email'))
         business_id = data.get('business_id')
+        unique_id = data.get('unique_id')
 
         full_text = " ".join([f"Q: {q} A: {r}" for q, r in zip(questions, responses)])
         
@@ -791,14 +794,17 @@ def submit_testimonial():
         db.session.add(testimonial)
 
         testimonial_request = TestimonialRequest.query.filter_by(
-            email=email,
-            user_id=user.id,
+            unique_id=unique_id,
             submitted=False
         ).first()
 
         if testimonial_request:
             testimonial_request.submitted = True
-            
+        else:
+            # If no matching request is found, you might want to log this or handle it accordingly
+            app.logger.warning(f"No matching testimonial request found for unique_id: {unique_id}")
+
+        db.session.add(testimonial)
         db.session.commit()
         
         return jsonify({
