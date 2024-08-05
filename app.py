@@ -30,11 +30,20 @@ logging.basicConfig(level=logging.INFO)
 # Load environment variables from .env file
 load_dotenv()
 
+def ensure_unicode(text):
+    if isinstance(text, bytes):
+        return text.decode('utf-8', errors='ignore')
+    elif isinstance(text, str):
+        return text
+    else:
+        return str(text)
+
 app = Flask(__name__)
 app.config.from_object(Config)
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
 if app.config['SQLALCHEMY_DATABASE_URI'].startswith("postgres://"):
     app.config['SQLALCHEMY_DATABASE_URI'] = app.config['SQLALCHEMY_DATABASE_URI'].replace("postgres://", "postgresql://", 1)
+app.config['SQLALCHEMY_DATABASE_URI'] += '?client_encoding=utf8'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = os.getenv('FLASK_SECRET_KEY')
 app.config['BREVO_API_KEY'] = os.getenv('BREVO_API_KEY')
@@ -745,12 +754,18 @@ def submit_testimonial():
 
         full_text = " ".join([f"Q: {q} A: {r}" for q, r in zip(questions, responses)])
         
+        app.logger.info(f"Full text (first 100 chars): {full_text[:100]}")
+        
         analysis = analyze_sentiment(full_text)
         snippets = extract_snippets(full_text)
         summary = ensure_unicode(generate_summary(full_text))
         website_quote = ensure_unicode(generate_website_quote(full_text))
         headline = ensure_unicode(generate_headline(full_text))
         
+        app.logger.info(f"Generated summary (first 100 chars): {summary[:100]}")
+        app.logger.info(f"Generated website quote (first 100 chars): {website_quote[:100]}")
+        app.logger.info(f"Generated headline (first 100 chars): {headline[:100]}")
+
         # Find the user associated with the business_id or use the current user
         if business_id:
             user = User.query.get(business_id)
@@ -959,10 +974,6 @@ def make_admin(user_id):
     return redirect(url_for('admin.index'))
 
 # Helper functions
-def ensure_unicode(text):
-    if isinstance(text, str):
-        return text.encode('utf-8', errors='ignore').decode('utf-8')
-    return text
 
 def generate_website_quote(conversation):
     settings = Settings.get()
