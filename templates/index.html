@@ -16,10 +16,10 @@
     {% endif %}
 </h1>
 
-<div id="chatbot" class="bg-base-200 rounded-lg p-6">
+<div id="chatbot" class="bg-base-200 rounded-lg p-6" data-first-name="{{ first_name }}" data-email="{{ email }}">
     <div id="messages" class="mb-4 h-64 overflow-y-auto"></div>
 
-    <div id="input-area" class="flex mb-4">
+    <div id="input-area" class="flex mb-4" style="display: none;">
         <textarea id="user-input" class="textarea textarea-bordered flex-grow mr-2" placeholder="Type your message..." rows="1"></textarea>
         <button onclick="sendMessage()" class="btn btn-primary">Send</button>
     </div>
@@ -42,9 +42,11 @@
 {% endblock %}
 
 {% block scripts %}
+<script src="{{ url_for('static', filename='chatbot.js') }}"></script>
 <script>
-    {% if business_id %}
-        var businessId = "{{ business_id }}";
+    const businessId = "{{ business_id }}";
+    {% if unique_id %}
+    const uniqueId = "{{ unique_id }}";
     {% endif %}
 
     document.addEventListener('DOMContentLoaded', function() {
@@ -68,5 +70,4 @@
         autoResize.call(textarea);
     });
 </script>
-<script src="{{ url_for('static', filename='chatbot.js') }}"></script>
 {% endblock %}
