@@ -1,3 +1,21 @@
+console.log("Chatbot script loaded");
+
+// Initialize all variables at the top
+let businessProfile = {};
+let initialQuestion = "";
+const INITIAL_QUESTIONS = 1;
+const FOLLOW_UP_QUESTIONS = 3;
+let currentQuestion = 0;
+let responses = [];
+let askedQuestions = [];
+let conversationHistory = "";
+let collectingPersonalInfo = true;
+let personalInfo = {
+    firstName: '',
+    email: ''
+};
+let personalInfoCollected = false;
+let submitOptionShown = false;
 let conversationStarted = false;
 
 function initializeChatbot(firstName = null, email = null) {
