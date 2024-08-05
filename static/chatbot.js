@@ -164,7 +164,7 @@ function showSubmitOption() {
     actionButtons.style.display = 'flex';
 }
 
-function submitTestimonial() {
+ffunction submitTestimonial() {
     const submitButton = document.getElementById('submit-testimonial');
     const actionButtons = document.getElementById('action-buttons');
 
@@ -176,12 +176,16 @@ function submitTestimonial() {
         questions: askedQuestions,
         responses: responses,
         firstName: personalInfo.firstName,
-        email: personalInfo.email,
-        unique_id: uniqueId
+        email: personalInfo.email
     };
 
     if (typeof businessId !== 'undefined') {
         testimonialData.business_id = businessId;
+    }
+
+    // Only add uniqueId if it's defined
+    if (typeof uniqueId !== 'undefined') {
+        testimonialData.unique_id = uniqueId;
     }
 
     fetch('/submit_testimonial', {

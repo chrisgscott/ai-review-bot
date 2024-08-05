@@ -793,18 +793,20 @@ def submit_testimonial():
         
         db.session.add(testimonial)
 
-        testimonial_request = TestimonialRequest.query.filter_by(
-            unique_id=unique_id,
-            submitted=False
-        ).first()
+        if unique_id:
+            testimonial_request = TestimonialRequest.query.filter_by(
+                unique_id=unique_id,
+                submitted=False
+            ).first()
 
-        if testimonial_request:
-            testimonial_request.submitted = True
+            if testimonial_request:
+                testimonial_request.submitted = True
+                app.logger.info(f"Marked testimonial request with unique_id {unique_id} as submitted")
+            else:
+                app.logger.warning(f"No matching testimonial request found for unique_id: {unique_id}")
         else:
-            # If no matching request is found, you might want to log this or handle it accordingly
-            app.logger.warning(f"No matching testimonial request found for unique_id: {unique_id}")
+            app.logger.info("Direct testimonial submission (no unique_id)")
 
-        db.session.add(testimonial)
         db.session.commit()
         
         return jsonify({

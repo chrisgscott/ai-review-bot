@@ -55,7 +55,7 @@ Leave Some Love is an AI-powered testimonial management platform designed to hel
 
 ### Bug Fixes
 
-- [ ] /submit_testimonial via request link doesn't start the chatbot conversation.
+- [X] ~~/submit_testimonial via request link doesn't start the chatbot conversation.~~
 - [X] ~~Fix UndefinedError when requesting a testimonial.~~
 - [X] ~~Fix duplicate initial question when on the submit_testimonial/<customlink> chat bot.~~
 - [X] ~~Submit testimonial button doesn't function on the /submit_testimonial/<customlink> page.~~
