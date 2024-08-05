@@ -6,6 +6,7 @@ let currentQuestion = 0;
 let responses = [];
 let askedQuestions = [];
 let conversationHistory = "";
+let initializedWithUserInfo = false;
 
 const PERSONAL_INFO_QUESTIONS = [
     "Before we begin, could you please tell us your first name?",
@@ -21,7 +22,7 @@ let personalInfoCollected = false;
 let submitOptionShown = false;
 
 function initializeChatbot(firstName = null, email = null) {
-    if (document.querySelector('#messages').children.length > 0) {
+    if (initializedWithUserInfo) {
         return;
     }
 
@@ -30,6 +31,7 @@ function initializeChatbot(firstName = null, email = null) {
         personalInfo.email = email;
         collectingPersonalInfo = false;
         personalInfoCollected = true;
+        initializedWithUserInfo = true;
     }
 
     if (typeof businessId !== 'undefined') {
@@ -63,14 +65,15 @@ function askPersonalInfoQuestion() {
 }
 
 function startMainConversation() {
-    if (!personalInfoCollected) {
-        personalInfoCollected = true;
-        let greeting = `Hi there, ${personalInfo.firstName}`;
-        let businessName = typeof businessId !== 'undefined' ? '' : ` with ${businessProfile.business_name || 'our business'}`;
-        initialQuestion = `${greeting}! We'd love to hear about your experience${businessName}. How would you rate it overall?`;
-        addMessage(initialQuestion, true);
-        askedQuestions.push(initialQuestion);
-    }
+    personalInfoCollected = true;
+    let greeting = `Hi there, ${personalInfo.firstName}`;
+    let businessName = typeof businessId !== 'undefined' ? '' : ` with ${businessProfile.business_name || 'our business'}`;
+    initialQuestion = `${greeting}! We'd love to hear about your experience${businessName}. How would you rate it overall?`;
+    addMessage(initialQuestion, true);
+    askedQuestions.push(initialQuestion);
+    
+    // Show the input area after asking the initial question
+    document.getElementById('input-area').style.display = 'flex';
 }
 
 function addMessage(message, isBot = false) {

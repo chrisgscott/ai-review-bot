@@ -1,26 +1,29 @@
 {% extends "base_public.html" %}
 {% block title %}Submit Your Testimonial{% endblock %}
 {% block content %}
-<h1 class="text-3xl font-bold mb-6 text-center">Submit Your Testimonial</h1>
+
+<h1 id="submit-your-testimonial" class="text-3xl font-bold mb-6 text-center">Submit Your Testimonial</h1>
 
 <div id="chatbot" class="bg-base-200 rounded-lg p-6">
-    <div id="messages" class="mb-4 h-64 overflow-y-auto"></div>
+    <div id="messages" class="mb-4 h-64 overflow-y-auto">
+    </div>
 
     <div id="input-area" class="flex mb-4">
-        <textarea id="user-input" class="textarea textarea-bordered flex-grow mr-2" placeholder="Type your message..." rows="1"></textarea>
+        <input type="text" id="user-input" class="input input-bordered flex-grow mr-2" placeholder="Type your message...">
         <button onclick="sendMessage()" class="btn btn-primary">Send</button>
     </div>
 
     <div id="action-buttons" class="hidden mb-4">
-        <button onclick="getNextQuestion()" class="btn btn-secondary mr-2">Continue Chatting</button>
+        <button onclick="getNextQuestion()" class="btn btn-primary mr-2">Continue Chatting</button>
     </div>
-    
-    <button id="submit-testimonial" onclick="submitTestimonial()" class="btn btn-primary w-full hidden">Submit Testimonial</button>
+
+    <button id="submit-testimonial" onclick="submitTestimonial()" class="btn btn-secondary w-full">Submit Testimonial</button>
 </div>
+
 {% endblock %}
 
 {% block scripts %}
-<script src="{{ url_for('static', filename='chatbot.js') }}"></script>
+<script src="{{ url_for('static', filename='js/chatbot.js') }}"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         initializeChatbot("{{ first_name }}", "{{ email }}");
