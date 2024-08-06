@@ -34,7 +34,7 @@
             <p>This is where you'll send people to submit their testimonials.</p>
             <div class="flex items-center">
                 {% if current_user.custom_url %}
-                    <input type="text" value="{{ url_for('custom_review', custom_url=current_user.custom_url, _external=True) }}" class="input input-bordered flex-grow mr-2" id="custom-url" readonly>
+                    <input type="text" value="{{ url_for('testimonial_request', custom_url=current_user.custom_url, _external=True) }}" class="input input-bordered flex-grow mr-2" id="custom-url" readonly>
                 {% else %}
                     <input type="text" value="Click Edit to set your custom URL." class="input input-bordered flex-grow mr-2" id="custom-url" readonly>
                 {% endif %}

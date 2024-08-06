@@ -21,7 +21,7 @@
     {% block extra_css %}{% endblock %}
 </head>
 <body class="bg-base-100 min-h-screen flex flex-col">
-    <main class="flex-grow container mx-auto px-4 py-8">
+    <main class="flex-grow w-full sm:w-11/12 md:w-2/3 lg:w-1/2 mx-auto px-4 py-8">
       {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
         <div id="flash-messages">

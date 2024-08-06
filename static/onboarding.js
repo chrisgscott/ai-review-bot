@@ -62,7 +62,7 @@ function askNextQuestion() {
         if (currentQuestion === 3) {
             // Generate and store the initial custom URL
             businessProfile.custom_url = generateCustomUrl(businessProfile.business_name || personalInfo.email.split('@')[0]);
-            question = question.replace('{custom_url}', `${baseUrl}review/${businessProfile.custom_url}`);
+            question = question.replace('{custom_url}', `${baseUrl}for/${businessProfile.custom_url}`);
         }
         addMessage(question, true);
         askedQuestions.push(question);
@@ -98,7 +98,7 @@ function handleResponse(message) {
         case 3:
             if (message.toLowerCase() === 'ok') {
                 // User is happy with the auto-generated URL
-                addMessage(`Great! We'll keep your custom URL as: ${baseUrl}review/${businessProfile.custom_url}`, true);
+                addMessage(`Great! We'll keep your custom URL as: ${baseUrl}for/${businessProfile.custom_url}`, true);
                 currentQuestion++;
                 askNextQuestion();
             } else if (message.toLowerCase() !== 'no') {
@@ -122,7 +122,7 @@ function checkCustomUrlAvailability(url) {
         .then(data => {
             if (data.available) {
                 businessProfile.custom_url = url;
-                addMessage(`Great! Your custom URL has been updated to: ${baseUrl}review/${url}`, true);
+                addMessage(`Great! Your custom URL has been updated to: ${baseUrl}for/${url}`, true);
                 currentQuestion++;
                 askNextQuestion();
             } else {
