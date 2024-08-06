@@ -343,7 +343,10 @@ with app.app_context():
 # Routes
 @app.route('/')
 def index():
-    return render_template('index.html')
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard'))
+    else:
+        return redirect(url_for('login'))
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -719,8 +722,8 @@ def check_custom_url():
     existing_user = User.query.filter(User.custom_url == custom_url, User.id != current_user.id).first()
     return jsonify({'available': existing_user is None})
 
-@app.route('/review/<custom_url>', methods=['GET', 'POST'])
-def custom_review(custom_url):
+@app.route('/for/<custom_url>', methods=['GET', 'POST'])
+def testimonial_request(custom_url):
     user = User.query.filter_by(custom_url=custom_url).first_or_404()
     if request.method == 'POST':
         # Handle testimonial submission
@@ -740,7 +743,11 @@ def custom_review(custom_url):
         db.session.commit()
         return jsonify({'status': 'success', 'message': 'Testimonial submitted successfully'})
     
-    return render_template('index.html', business_name=user.business_profile.business_name, business_id=user.id)
+    return render_template('testimonial_request.html', business_name=user.business_profile.business_name, business_id=user.id)
+
+@app.route('/review/<custom_url>')
+def legacy_review_redirect(custom_url):
+    return redirect(url_for('testimonial_request', custom_url=custom_url), code=301)
 
 @app.route('/submit_testimonial/<unique_id>', methods=['GET', 'POST'])
 def submit_testimonial_by_link(unique_id):
