@@ -136,7 +136,7 @@ function checkCustomUrlAvailability(url) {
 }
 
 function finishOnboarding() {
-    addMessage("Great! We've collected all the information we need. Let's save your profile and head to your dashboard!", true);
+    addMessage("Great! We've collected all the information we need. Let's save your profile.", true);
     saveProfile();
 }
 
@@ -151,10 +151,9 @@ function saveProfile() {
     .then(response => response.json())
     .then(data => {
         if (data.status === 'success') {
-            addMessage("Your profile has been saved successfully. Redirecting to your dashboard...", true);
-            setTimeout(() => {
-                window.location.href = `${baseUrl}dashboard`;
-            }, 3000);
+            addMessage("Your profile has been saved successfully!", true);
+            addMessage("When you're ready, click the button below to go to your dashboard.", true);
+            showDashboardButton();
         } else {
             throw new Error(data.message || 'Unknown error occurred');
         }
@@ -163,6 +162,21 @@ function saveProfile() {
         console.error('Error saving profile:', error);
         addMessage("There was an error saving your profile. Please try again or contact support.", true);
     });
+}
+
+function showDashboardButton() {
+    const buttonContainer = document.createElement('div');
+    buttonContainer.className = 'mt-4';
+    const dashboardButton = document.createElement('button');
+    dashboardButton.textContent = 'Go to Dashboard';
+    dashboardButton.className = 'btn btn-primary';
+    dashboardButton.addEventListener('click', goToDashboard);
+    buttonContainer.appendChild(dashboardButton);
+    document.getElementById('chatbot').appendChild(buttonContainer);
+}
+
+function goToDashboard() {
+    window.location.href = `${baseUrl}dashboard`;
 }
 
 function generateCustomUrl(name) {
