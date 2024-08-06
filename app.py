@@ -80,6 +80,7 @@ class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password = db.Column(db.String(255), nullable=False)
+    first_name = db.Column(db.String(50), nullable=True)
     is_admin = db.Column(db.Boolean, default=False)
     registration_date = db.Column(db.DateTime, default=datetime.utcnow)
     last_login = db.Column(db.DateTime)
@@ -408,7 +409,7 @@ def onboarding():
     if current_user.business_profile and current_user.business_profile.business_name:
         return redirect(url_for('dashboard'))
     
-    return render_template('onboarding.html', first_name=current_user.first_name, email=current_user.email)
+    return render_template('onboarding.html', email=current_user.email)
 
 @app.route('/logout')
 @login_required

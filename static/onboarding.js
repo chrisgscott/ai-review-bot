@@ -6,7 +6,6 @@ let responses = [];
 let askedQuestions = [];
 let conversationHistory = "";
 let personalInfo = {
-    firstName: '',
     email: ''
 };
 let submitOptionShown = false;
@@ -22,14 +21,13 @@ const questions = [
 function initializeOnboarding() {
     const chatbotElement = document.getElementById('chatbot');
     if (chatbotElement) {
-        personalInfo.firstName = chatbotElement.dataset.firstName;
         personalInfo.email = chatbotElement.dataset.email;
     }
     startConversation();
 }
 
 function startConversation() {
-    addMessage(`Welcome, ${personalInfo.firstName}! Let's set up your business profile.`, true);
+    addMessage(`Welcome! Let's set up your business profile.`, true);
     askNextQuestion();
 }
 
