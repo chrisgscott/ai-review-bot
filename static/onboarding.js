@@ -8,7 +8,7 @@ let conversationHistory = "";
 let personalInfo = {
     email: ''
 };
-let submitOptionShown = false;
+let baseUrl = '';
 
 const questions = [
     "First, what's the name of your business?",
@@ -19,19 +19,27 @@ const questions = [
 ];
 
 function initializeOnboarding() {
+    console.log("Initializing onboarding");
     const chatbotElement = document.getElementById('chatbot');
     if (chatbotElement) {
         personalInfo.email = chatbotElement.dataset.email;
+        baseUrl = chatbotElement.dataset.baseUrl;
+        console.log("Email:", personalInfo.email);
+        console.log("Base URL:", baseUrl);
+        startConversation();
+    } else {
+        console.error("Chatbot element not found");
     }
-    startConversation();
 }
 
 function startConversation() {
+    console.log("Starting conversation");
     addMessage(`Welcome! Let's set up your business profile.`, true);
     askNextQuestion();
 }
 
 function addMessage(message, isBot = false) {
+    console.log("Adding message:", message, "isBot:", isBot);
     const messageDiv = document.createElement('div');
     messageDiv.className = isBot ? 'chat chat-start' : 'chat chat-end';
     const bubbleDiv = document.createElement('div');
@@ -47,9 +55,10 @@ function addMessage(message, isBot = false) {
 }
 
 function askNextQuestion() {
+    console.log("Asking next question, current question:", currentQuestion);
     if (currentQuestion < questions.length) {
         let question = questions[currentQuestion].replace('{business_name}', businessProfile.business_name || 'your business');
-        question = question.replace('{custom_url}', `https://leavesomelove.com/review/${generateCustomUrl(businessProfile.business_name || personalInfo.firstName)}`);
+        question = question.replace('{custom_url}', `${baseUrl}review/${generateCustomUrl(businessProfile.business_name || personalInfo.email.split('@')[0])}`);
         addMessage(question, true);
         askedQuestions.push(question);
     } else {
@@ -97,12 +106,12 @@ function handleResponse(message) {
 }
 
 function checkCustomUrlAvailability(url) {
-    fetch(`/api/check_custom_url/${url}`)
+    fetch(`${baseUrl}api/check_custom_url/${url}`)
         .then(response => response.json())
         .then(data => {
             if (data.available) {
                 businessProfile.custom_url = url;
-                addMessage(`Great! Your custom URL has been updated to: https://leavesomelove.com/review/${url}`, true);
+                addMessage(`Great! Your custom URL has been updated to: ${baseUrl}review/${url}`, true);
                 currentQuestion++;
                 askNextQuestion();
             } else {
@@ -121,7 +130,7 @@ function finishOnboarding() {
 }
 
 function saveProfile() {
-    fetch('/api/onboarding/save', {
+    fetch(`${baseUrl}api/onboarding/save`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -133,7 +142,7 @@ function saveProfile() {
         if (data.status === 'success') {
             addMessage("Your profile has been saved successfully. Redirecting to your dashboard...", true);
             setTimeout(() => {
-                window.location.href = '/dashboard';
+                window.location.href = `${baseUrl}dashboard`;
             }, 3000);
         } else {
             throw new Error(data.message || 'Unknown error occurred');
