@@ -21,7 +21,7 @@ Leave Some Love is an AI-powered testimonial management platform designed to hel
 - [ ] Collect business logo and ~~send business name~~ + logo to Brevo for template customization.
 - [ ] Modify the chatbot interface to expand vertically as the chat length increases.
 - [ ] Add Logout link to My Profile?
-- [ ] Add onboarding flow for setting Business Details + Customizing Review URL
+- [X] ~~Add onboarding flow for setting Business Details + Customizing Review URL~~
 - [ ] Create a seed file for LSL Business Details/Profile Setup
 - [ ] Add a headshot upload step to testimonial collection if sentiment is 9+ and no profile picture available from Gravatar?
 - [ ] Add an approval step between submission and review site ask ("Here's your review. Approve it or edit it." (Save + Approve btn after editing?))
