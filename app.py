@@ -808,6 +808,8 @@ def submit_testimonial():
             app.logger.info("Direct testimonial submission (no unique_id)")
 
         db.session.commit()
+
+        send_testimonial_notification(testimonial)
         
         return jsonify({
             'status': 'success',
@@ -1170,6 +1172,37 @@ def extract_snippets(text):
     )
     snippets = ensure_unicode(response.choices[0].message.content).strip().split('\n')
     return [ensure_unicode(snippet.strip('- ')) for snippet in snippets if snippet.strip()]
+
+def send_testimonial_notification(testimonial):
+    try:
+        user = User.query.get(testimonial.user_id)
+        business_profile = BusinessProfile.query.filter_by(user_id=user.id).first()
+
+        if not business_profile:
+            app.logger.warning(f"No business profile found for user {user.id}")
+            business_name = "Your Business"
+        else:
+            business_name = business_profile.business_name
+
+        testimonial_link = url_for('testimonial_detail', id=testimonial.id, _external=True)
+
+        send_smtp_email = sib_api_v3_sdk.SendSmtpEmail(
+            to=[{"email": user.email, "name": business_name}],
+            template_id=4,  # Brevo template number for testimonial notification
+            params={
+                "business_name": business_name,
+                "reviewer_name": testimonial.reviewer_name,
+                "reviewer_email_address": testimonial.reviewer_email,
+                "testimonial_link": testimonial_link
+            }
+        )
+
+        api_response = api_instance.send_transac_email(send_smtp_email)
+        app.logger.info(f"Testimonial notification email sent to {user.email}")
+    except ApiException as e:
+        app.logger.error(f"Brevo API error when sending testimonial notification: {str(e)}")
+    except Exception as e:
+        app.logger.error(f"Unexpected error when sending testimonial notification: {str(e)}")
 
 @app.cli.command("create-admin")
 @click.argument("email")
