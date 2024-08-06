@@ -14,7 +14,7 @@ const questions = [
     "First, what's the name of your business?",
     "Great, now tell me a bit about {business_name} so I can get you even better testimonials from your customers and clients.",
     "So, do you want testimonials that highlight your service? Your value? How amazing your product quality is? Tell me a bit about the kinds of things you'd like your testimonials to highlight and I'll be sure to ask questions that will focus on those things.",
-    "Almost done! We've created a custom URL for you: {custom_url}. Do you want to change it? If so, just tell me what you'd like that last bit to be, after the '/review/' part. I'll check if it's available for you.",
+    "Almost done! We've created a custom URL for you: {custom_url}. Is this okay, or would you like to change it? (Reply 'OK' to keep it, or type a new slug to change it)",
     "Finally, do you have an external website where you'd like to collect reviews? If so, please provide the URL. If not, just type 'skip'."
 ];
 
@@ -23,9 +23,10 @@ function initializeOnboarding() {
     const chatbotElement = document.getElementById('chatbot');
     if (chatbotElement) {
         personalInfo.email = chatbotElement.dataset.email;
-        baseUrl = chatbotElement.dataset.baseUrl;
+        baseUrl = new URL(chatbotElement.dataset.baseUrl);
+        baseUrl.protocol = 'https:';  // Force HTTPS
         console.log("Email:", personalInfo.email);
-        console.log("Base URL:", baseUrl);
+        console.log("Base URL:", baseUrl.toString());
         startConversation();
     } else {
         console.error("Chatbot element not found");
@@ -58,7 +59,11 @@ function askNextQuestion() {
     console.log("Asking next question, current question:", currentQuestion);
     if (currentQuestion < questions.length) {
         let question = questions[currentQuestion].replace('{business_name}', businessProfile.business_name || 'your business');
-        question = question.replace('{custom_url}', `${baseUrl}review/${generateCustomUrl(businessProfile.business_name || personalInfo.email.split('@')[0])}`);
+        if (currentQuestion === 3) {
+            // Generate and store the initial custom URL
+            businessProfile.custom_url = generateCustomUrl(businessProfile.business_name || personalInfo.email.split('@')[0]);
+            question = question.replace('{custom_url}', `${baseUrl}review/${businessProfile.custom_url}`);
+        }
         addMessage(question, true);
         askedQuestions.push(question);
     } else {
@@ -91,7 +96,13 @@ function handleResponse(message) {
             businessProfile.testimonial_guidance = message;
             break;
         case 3:
-            if (message.toLowerCase() !== 'no') {
+            if (message.toLowerCase() === 'ok') {
+                // User is happy with the auto-generated URL
+                addMessage(`Great! We'll keep your custom URL as: ${baseUrl}review/${businessProfile.custom_url}`, true);
+                currentQuestion++;
+                askNextQuestion();
+            } else if (message.toLowerCase() !== 'no') {
+                // User wants to change the URL
                 checkCustomUrlAvailability(message);
                 return;
             }
