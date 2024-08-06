@@ -7,7 +7,7 @@ Leave Some Love is an AI-powered testimonial management platform designed to hel
 ### Features
 - [ ] Add a bulk testimonial request feature (upload a list of first name and email address, send all requests at once)
 - [ ] Create a public profile page of testimonials and user details to capture google juice.
-- [ ] Add a notification email to the business owner when a testimonial is submitted.
+- [X] ~~Add a notification email to the business owner when a testimonial is submitted.~~
 - [X] ~~Add a way for the reviewer to copy their review summary and paste in the review site of the business owners' choice~~
 - [X] ~~Implement user authentication~~
 - [X] ~~Add profile management~~

@@ -112,7 +112,7 @@ class Testimonial(db.Model):
 
 class BusinessProfile(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    business_name = db.Column(db.String(100), nullable=False)
+    business_name = db.Column(db.String(100), nullable=True)
     business_description = db.Column(db.Text, nullable=False)
     testimonial_guidance = db.Column(db.Text, nullable=False)
     review_url = db.Column(db.String(255), nullable=True)
@@ -350,20 +350,13 @@ def register():
     if request.method == 'POST':
         email = request.form['email']
         password = request.form['password']
-        business_name = request.form['business_name']
         existing_user = User.query.filter_by(email=email).first()
         if existing_user is None:
             hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
-            custom_url = generate_custom_url(business_name)
-            new_user = User(email=email, password=hashed_password, custom_url=custom_url)
-            new_profile = BusinessProfile(
-                business_name=business_name,
-                business_description="Tell us about your business",  # Default value
-                testimonial_guidance="What would you like customers to focus on?",  # Default value
-                user=new_user
-            )
+            new_user = User(email=email, password=hashed_password)
+            # Generate a default custom URL based on the email
+            new_user.custom_url = generate_default_custom_url(email)
             db.session.add(new_user)
-            db.session.add(new_profile)
             try:
                 db.session.commit()
                 flash('Registration successful. Please log in.', 'success')
@@ -375,8 +368,12 @@ def register():
             flash('Email already exists.', 'danger')
     return render_template('register.html')
 
-def generate_default_custom_url(user_id):
-    return f"user-{user_id}"
+def generate_default_custom_url(email):
+    # Use the part before @ in the email as the base for the custom URL
+    base = email.split('@')[0]
+    # Add a random string to ensure uniqueness
+    random_string = ''.join(random.choices(string.ascii_lowercase + string.digits, k=6))
+    return f"{base}-{random_string}"
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -394,10 +391,24 @@ def login():
                 user.custom_url = generate_default_custom_url(user.id)
             
             db.session.commit()
+
+            # Check if it's the user's first login
+            if user.login_count == 1:
+                return redirect(url_for('onboarding'))
+            
             flash('Logged in successfully.', 'success')
             return redirect(url_for('dashboard'))
         flash('Invalid email or password.', 'danger')
     return render_template('login.html')
+
+@app.route('/onboarding')
+@login_required
+def onboarding():
+    # Check if the user has already completed onboarding
+    if current_user.business_profile and current_user.business_profile.business_name:
+        return redirect(url_for('dashboard'))
+    
+    return render_template('onboarding.html', first_name=current_user.first_name, email=current_user.email)
 
 @app.route('/logout')
 @login_required
@@ -405,6 +416,35 @@ def logout():
     logout_user()
     flash('Logged out successfully.', 'success')
     return redirect(url_for('login'))
+
+@app.route('/api/check_custom_url/<custom_url>')
+@login_required
+def check_custom_url_availability(custom_url):
+    existing_user = User.query.filter(User.custom_url == custom_url, User.id != current_user.id).first()
+    return jsonify({'available': existing_user is None})
+
+@app.route('/api/onboarding/save', methods=['POST'])
+@login_required
+def save_onboarding_data():
+    data = request.json
+    
+    # Update or create BusinessProfile
+    profile = BusinessProfile.query.filter_by(user_id=current_user.id).first()
+    if not profile:
+        profile = BusinessProfile(user_id=current_user.id)
+        db.session.add(profile)
+    
+    profile.business_name = data['business_name']
+    profile.business_description = data['business_description']
+    profile.testimonial_guidance = data['testimonial_guidance']
+    profile.review_url = data.get('review_url', '')
+    
+    # Update User custom_url
+    current_user.custom_url = data['custom_url']
+    
+    db.session.commit()
+    
+    return jsonify({'status': 'success'})
 
 @app.route('/reset_password_request', methods=['GET', 'POST'])
 def reset_password_request():
