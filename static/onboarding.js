@@ -13,9 +13,9 @@ let baseUrl = '';
 const questions = [
     "First, what's the name of your business?",
     "Great, now tell me a bit about {business_name} so I can get you even better testimonials from your customers and clients.",
-    "So, do you want testimonials that highlight your service? Your value? How amazing your product quality is? Tell me a bit about the kinds of things you'd like your testimonials to highlight and I'll be sure to ask questions that will focus on those things.",
+    "Ok, let's talk about the kinds of testimonials you'd like to get. Do you want testimonials that highlight your service? Your value? How amazing your product quality is? Tell me a bit about the kinds of things you'd like your testimonials to highlight and I'll be sure to ask questions that will focus on those things.",
     "Almost done! We've created a custom URL for you: {custom_url}. Is this okay, or would you like to change it? (Reply 'OK' to keep it, or type a new slug to change it)",
-    "Finally, do you have an external website where you'd like to collect reviews? If so, please provide the URL. If not, just type 'skip'."
+    "Finally, do you have an external website like Google or Yelp where you'd like to collect reviews? If so, please provide the URL. If not, just type 'skip'."
 ];
 
 function initializeOnboarding() {

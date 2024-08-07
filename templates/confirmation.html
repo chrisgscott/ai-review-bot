@@ -5,9 +5,9 @@
     <h1 class="text-3xl font-bold mb-4">Thank You for Your Testimonial!</h1>
 
     {% if show_review_buttons %}
-    <p>We've summarized your feedback. If you're happy with it, please consider sharing it on our review page.</p>
+    <p>I've created a summary of our conversation. If you're happy with it, please consider sharing it on our review page.</p>
     {% else %}
-    <p>We've summarized your feedback. Thank you for taking the time to share your experience with us.</p>
+    <p class="mb-20">I've created a summary of our conversation. Thank you for taking the time to share your experience with us.</p>
     {% endif %}
 
     <div class="bg-base-200 p-4 rounded-lg mb-6">
@@ -19,7 +19,7 @@
     <div class="flex flex-row gap-4">
         <button class="btn btn-primary" onclick="copyToClipboard()">Copy to Clipboard</button>
         <a href="{{ business_profile.review_url }}" class="btn btn-secondary" target="_blank">
-            {{ business_profile.review_button_text }}
+            {{ business_profile.review_button_text or 'Post Your Review' }}
         </a>
     </div>
     {% endif %}

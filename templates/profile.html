@@ -69,13 +69,13 @@
                             <label for="review_url" class="label">
                                 <span class="label-text">Review URL (e.g., Google My Business or Yelp profile)</span>
                             </label>
-                            <input type="url" id="review_url" name="review_url" value="{{ profile.review_url }}" class="input input-bordered" required>
+                            <input type="url" id="review_url" name="review_url" value="{{ profile.review_url }}" class="input input-bordered">
                         </div>
                         <div class="form-control mt-4">
                             <label for="review_button_text" class="label">
                                 <span class="label-text">Review Button Text</span>
                             </label>
-                            <input type="text" id="review_button_text" name="review_button_text" value="{{ profile.review_button_text or 'Post Your Review' }}" class="input input-bordered" required>
+                            <input type="text" id="review_button_text" name="review_button_text" value="{{ profile.review_button_text or 'Post Your Review' }}" class="input input-bordered">
                         </div>
                     </div>
                 </div>

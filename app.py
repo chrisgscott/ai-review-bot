@@ -1005,7 +1005,7 @@ def get_next_question():
 def confirmation(testimonial_id):
     testimonial = Testimonial.query.get_or_404(testimonial_id)
     business_profile = BusinessProfile.query.filter_by(user_id=testimonial.user_id).first()
-    show_review_buttons = business_profile and business_profile.review_url
+    show_review_buttons = business_profile and business_profile.review_url and business_profile.review_url.lower() != "none"
     return render_template('confirmation.html', 
                            testimonial=testimonial, 
                            business_profile=business_profile,
