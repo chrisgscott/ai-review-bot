@@ -1005,9 +1005,11 @@ def get_next_question():
 def confirmation(testimonial_id):
     testimonial = Testimonial.query.get_or_404(testimonial_id)
     business_profile = BusinessProfile.query.filter_by(user_id=testimonial.user_id).first()
+    show_review_buttons = business_profile and business_profile.review_url
     return render_template('confirmation.html', 
                            testimonial=testimonial, 
-                           business_profile=business_profile)
+                           business_profile=business_profile,
+                           show_review_buttons=show_review_buttons)
 
 @app.route('/delete_testimonial/<int:id>', methods=['POST'])
 @login_required
