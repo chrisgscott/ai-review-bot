@@ -1,13 +1,47 @@
 {% extends "base_public.html" %}
 {% block title %}Welcome to Leave Some Love - Onboarding{% endblock %}
+
+{% block extra_head %}
+<style>
+    .typing-indicator {
+        display: inline-flex;
+        align-items: center;
+        width: 50px;
+    }
+
+    .typing-indicator span {
+        height: 8px;
+        width: 8px;
+        margin: 0 2px;
+        background-color: #9880ff;
+        display: inline-block;
+        border-radius: 50%;
+        opacity: 0.4;
+        animation: 1s blink infinite;
+    }
+
+    .typing-indicator span:nth-of-type(1) { animation-delay: 0.3333s; }
+    .typing-indicator span:nth-of-type(2) { animation-delay: 0.6666s; }
+    .typing-indicator span:nth-of-type(3) { animation-delay: 0.9999s; }
+
+    @keyframes blink {
+        50% { opacity: 1; }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container mx-auto px-4 py-8">
-    <h1 class="text-3xl font-bold mb-4">Welcome to Leave Some Love!</h1>
+    <h1 class="text-3xl font-bold mb-6 text-center">Welcome to Leave Some Love!</h1>
+    
     <div id="chatbot" class="bg-white rounded-lg shadow-md p-4 mb-4" data-email="{{ email }}" data-base-url="{{ request.host_url }}">
-        <div id="messages" class="mb-4 overflow-y-auto" style="max-height: 400px;"></div>
-        <div id="input-area" class="flex" style="display: none;">
-            <input type="text" id="user-input" class="flex-grow border rounded-l px-4 py-2" placeholder="Type your response...">
-            <button id="send-button" class="bg-blue-500 text-white px-4 py-2 rounded-r">Send</button>
+        <div id="messages" class="mb-4 h-96 overflow-y-auto">
+            <!-- Messages will be inserted here -->
+        </div>
+        
+        <div id="input-area" class="flex mt-4" style="display: none;">
+            <input type="text" id="user-input" class="input input-bordered flex-grow mr-2" placeholder="Type your response...">
+            <button id="send-button" class="btn btn-primary">Send</button>
         </div>
     </div>
 </div>

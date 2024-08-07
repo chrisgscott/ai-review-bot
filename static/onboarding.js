@@ -9,6 +9,7 @@ let personalInfo = {
     email: ''
 };
 let baseUrl = '';
+let dashboardButtonAdded = false;
 
 const questions = [
     "First, what's the name of your business?",
@@ -35,8 +36,22 @@ function initializeOnboarding() {
 
 function startConversation() {
     console.log("Starting conversation");
-    addMessage(`Welcome! Let's set up your business profile.`, true);
-    askNextQuestion();
+    document.getElementById('input-area').style.display = 'flex';
+    addMessageWithDelay(`Welcome! Let's set up your business profile.`, true)
+        .then(() => askNextQuestion());
+}
+
+function addMessageWithDelay(message, isBot = false, delay = 1000) {
+    return new Promise((resolve) => {
+        setTimeout(() => {
+            removeTypingIndicator();
+            addMessage(message, isBot);
+            if (isBot) {
+                scrollToBottom();
+            }
+            resolve();
+        }, delay);
+    });
 }
 
 function addMessage(message, isBot = false) {
@@ -48,10 +63,32 @@ function addMessage(message, isBot = false) {
     bubbleDiv.textContent = message;
     messageDiv.appendChild(bubbleDiv);
     document.getElementById('messages').appendChild(messageDiv);
-    document.getElementById('messages').scrollTop = document.getElementById('messages').scrollHeight;
+    scrollToBottom();
+}
 
-    if (isBot) {
-        document.getElementById('input-area').style.display = 'flex';
+function scrollToBottom() {
+    const messagesContainer = document.getElementById('messages');
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+}
+
+function addTypingIndicator() {
+    const typingDiv = document.createElement('div');
+    typingDiv.className = 'chat chat-start';
+    const bubbleDiv = document.createElement('div');
+    bubbleDiv.className = 'chat-bubble bg-base-300';
+    const indicatorDiv = document.createElement('div');
+    indicatorDiv.className = 'typing-indicator';
+    indicatorDiv.innerHTML = '<span></span><span></span><span></span>';
+    bubbleDiv.appendChild(indicatorDiv);
+    typingDiv.appendChild(bubbleDiv);
+    document.getElementById('messages').appendChild(typingDiv);
+    scrollToBottom();
+}
+
+function removeTypingIndicator() {
+    const typingIndicator = document.querySelector('.chat-start:last-child');
+    if (typingIndicator && typingIndicator.querySelector('.typing-indicator')) {
+        typingIndicator.remove();
     }
 }
 
@@ -60,11 +97,14 @@ function askNextQuestion() {
     if (currentQuestion < questions.length) {
         let question = questions[currentQuestion].replace('{business_name}', businessProfile.business_name || 'your business');
         if (currentQuestion === 3) {
-            // Generate and store the initial custom URL
             businessProfile.custom_url = generateCustomUrl(businessProfile.business_name || personalInfo.email.split('@')[0]);
             question = question.replace('{custom_url}', `${baseUrl}for/${businessProfile.custom_url}`);
         }
-        addMessage(question, true);
+        addTypingIndicator();
+        scrollToBottom();
+        setTimeout(() => {
+            addMessageWithDelay(question, true);
+        }, 1500);
         askedQuestions.push(question);
     } else {
         finishOnboarding();
@@ -88,59 +128,76 @@ function handleResponse(message) {
     switch (currentQuestion) {
         case 0:
             businessProfile.business_name = message;
+            currentQuestion++;
+            askNextQuestion();
             break;
         case 1:
             businessProfile.business_description = message;
+            currentQuestion++;
+            askNextQuestion();
             break;
         case 2:
             businessProfile.testimonial_guidance = message;
+            currentQuestion++;
+            askNextQuestion();
             break;
         case 3:
             if (message.toLowerCase() === 'ok') {
-                // User is happy with the auto-generated URL
-                addMessage(`Great! We'll keep your custom URL as: ${baseUrl}for/${businessProfile.custom_url}`, true);
-                currentQuestion++;
-                askNextQuestion();
+                addTypingIndicator();
+                setTimeout(() => {
+                    removeTypingIndicator();
+                    addMessageWithDelay(`Great! We'll keep your custom URL as: ${baseUrl}for/${businessProfile.custom_url}`, true)
+                        .then(() => {
+                            currentQuestion++;
+                            askNextQuestion();
+                        });
+                }, 1500);
             } else if (message.toLowerCase() !== 'no') {
-                // User wants to change the URL
                 checkCustomUrlAvailability(message);
-                return;
             }
             break;
         case 4:
             businessProfile.review_url = message.toLowerCase() !== 'skip' ? message : '';
+            finishOnboarding();
             break;
     }
-
-    currentQuestion++;
-    askNextQuestion();
 }
 
 function checkCustomUrlAvailability(url) {
+    addTypingIndicator();
     fetch(`${baseUrl}api/check_custom_url/${url}`)
         .then(response => response.json())
         .then(data => {
+            removeTypingIndicator();
             if (data.available) {
                 businessProfile.custom_url = url;
-                addMessage(`Great! Your custom URL has been updated to: ${baseUrl}for/${url}`, true);
-                currentQuestion++;
-                askNextQuestion();
+                addMessageWithDelay(`Great! Your custom URL has been updated to: ${baseUrl}for/${url}`, true)
+                    .then(() => {
+                        currentQuestion++;
+                        askNextQuestion();
+                    });
             } else {
-                addMessage("I'm sorry, that URL is not available. Please try another one.", true);
+                addMessageWithDelay("I'm sorry, that URL is not available. Please try another one.", true);
             }
         })
         .catch(error => {
+            removeTypingIndicator();
             console.error('Error checking custom URL availability:', error);
-            addMessage("There was an error checking the URL availability. Please try again.", true);
+            addMessageWithDelay("There was an error checking the URL availability. Please try again.", true);
         });
 }
 
 function finishOnboarding() {
-    addMessage("Great! We've collected all the information we need. Let's save your profile.", true);
-    saveProfile();
+    addTypingIndicator();
+    setTimeout(() => {
+        removeTypingIndicator();
+        addMessageWithDelay("Great! We've collected all the information we need. Let's save your profile.", true)
+            .then(() => saveProfile());
+    }, 1500);
 }
 
 function saveProfile() {
+    addTypingIndicator();
     fetch(`${baseUrl}api/onboarding/save`, {
         method: 'POST',
         headers: {
@@ -150,29 +207,38 @@ function saveProfile() {
     })
     .then(response => response.json())
     .then(data => {
+        removeTypingIndicator();
         if (data.status === 'success') {
-            addMessage("Your profile has been saved successfully!", true);
-            addMessage("When you're ready, click the button below to go to your dashboard.", true);
-            showDashboardButton();
+            addMessageWithDelay("Your profile has been saved successfully!", true)
+                .then(() => addMessageWithDelay("When you're ready, click the button below to go to your dashboard.", true))
+                .then(() => showDashboardButton());
         } else {
             throw new Error(data.message || 'Unknown error occurred');
         }
     })
     .catch(error => {
+        removeTypingIndicator();
         console.error('Error saving profile:', error);
-        addMessage("There was an error saving your profile. Please try again or contact support.", true);
+        addMessageWithDelay("There was an error saving your profile. Please try again or contact support.", true);
     });
 }
 
 function showDashboardButton() {
-    const buttonContainer = document.createElement('div');
-    buttonContainer.className = 'mt-4';
-    const dashboardButton = document.createElement('button');
-    dashboardButton.textContent = 'Go to Dashboard';
-    dashboardButton.className = 'btn btn-primary';
-    dashboardButton.addEventListener('click', goToDashboard);
-    buttonContainer.appendChild(dashboardButton);
-    document.getElementById('chatbot').appendChild(buttonContainer);
+    if (!dashboardButtonAdded) {
+        const buttonContainer = document.createElement('div');
+        buttonContainer.className = 'mt-4';
+        const dashboardButton = document.createElement('button');
+        dashboardButton.textContent = 'Go to Dashboard';
+        dashboardButton.className = 'btn btn-primary';
+        dashboardButton.addEventListener('click', goToDashboard);
+        buttonContainer.appendChild(dashboardButton);
+        document.getElementById('chatbot').appendChild(buttonContainer);
+        
+        // Remove the input area
+        document.getElementById('input-area').style.display = 'none';
+        
+        dashboardButtonAdded = true;
+    }
 }
 
 function goToDashboard() {

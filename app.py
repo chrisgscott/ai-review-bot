@@ -978,9 +978,16 @@ def get_next_question():
     try:
         data = request.get_json()
         conversation_history = data['conversation_history']
+        business_id = data.get('business_id')  # Add this line to get the business_id from the request
         
-        app.logger.info("Fetching business profile...")
-        profile = BusinessProfile.query.first()
+        app.logger.info(f"Fetching business profile for business_id: {business_id}")
+        
+        if business_id:
+            profile = BusinessProfile.query.filter_by(user_id=business_id).first()
+        else:
+            # Fallback to the first profile if no business_id is provided (you might want to handle this differently)
+            profile = BusinessProfile.query.first()
+        
         app.logger.info(f"Profile fetched: {profile}")
         
         if profile is None:

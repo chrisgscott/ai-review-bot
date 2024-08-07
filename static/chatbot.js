@@ -139,7 +139,10 @@ function getNextQuestion() {
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ conversation_history: conversationHistory }),
+        body: JSON.stringify({ 
+            conversation_history: conversationHistory,
+            business_id: businessId  // Add this line
+        }),
     })
     .then(response => response.json())
     .then(data => {
