@@ -994,13 +994,12 @@ def get_next_question():
         app.logger.info("Generating follow-up question...")
         next_question = generate_follow_up_question(conversation_history, profile)
         
-        app.logger.info("Question generated successfully")
+        app.logger.info(f"Question generated successfully: {next_question}")
         return jsonify({'question': next_question})
     except Exception as e:
         app.logger.error(f"Error in get_next_question: {str(e)}", exc_info=True)
         return jsonify({'status': 'error', 'message': 'An error occurred while getting the next question'}), 500
-
-
+    
 @app.route('/confirmation/<int:testimonial_id>')
 def confirmation(testimonial_id):
     testimonial = Testimonial.query.get_or_404(testimonial_id)
@@ -1133,7 +1132,7 @@ def generate_summary(conversation):
 def generate_follow_up_question(conversation_history, profile):
     settings = Settings.get()
     app.logger.info(f"Settings object: {settings}")
-    app.logger.info(f"Follow-up prompt: {settings.follow_up_prompt if settings else 'None'}")
+    app.logger.info(f"Follow-up prompt template: {settings.follow_up_prompt if settings else 'None'}")
     
     if isinstance(profile, dict):
         business_name = profile.get('business_name', 'the business')
@@ -1176,6 +1175,8 @@ def generate_follow_up_question(conversation_history, profile):
     Follow-up question:
     """
 
+    app.logger.info(f"Full prompt being sent to OpenAI:\n{full_prompt}")
+
     app.logger.info("Sending request to OpenAI...")
     response = client.chat.completions.create(
         model="gpt-4o-mini",
@@ -1186,7 +1187,10 @@ def generate_follow_up_question(conversation_history, profile):
     )
     app.logger.info("Received response from OpenAI")
 
-    return response.choices[0].message.content.strip()
+    generated_question = response.choices[0].message.content.strip()
+    app.logger.info(f"Generated question: {generated_question}")
+
+    return generated_question
 
 def analyze_sentiment(text):
     settings = Settings.get()
