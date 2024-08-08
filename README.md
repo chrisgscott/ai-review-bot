@@ -6,7 +6,10 @@ Leave Some Love is an AI-powered testimonial management platform designed to hel
 
 ### Features
 - [ ] Add a bulk testimonial request feature (upload a list of first name and email address, send all requests at once)
+- [ ] Analyze the content of testimonials as they come in and automatically create groups based on the topics mentioned in the testimonials. This could be used to counter common objections before they come up (h/t: https://chatgpt.com/c/8e26af42-5263-4470-bc84-03746bff5026).
+- [ ] Send suggestions to business owners on how to use recent testimonials in their business to bring more clients.
 - [ ] Create a public profile page of testimonials and user details to capture google juice.
+- [ ] Zapier integration
 - [X] ~~Add a notification email to the business owner when a testimonial is submitted.~~
 - [X] ~~Add a way for the reviewer to copy their review summary and paste in the review site of the business owners' choice~~
 - [X] ~~Implement user authentication~~
@@ -21,7 +24,6 @@ Leave Some Love is an AI-powered testimonial management platform designed to hel
 - [ ] Collect business logo and ~~send business name~~ + logo to Brevo for template customization.
 - [ ] Modify the chatbot interface to expand vertically as the chat length increases.
 - [ ] Add Logout link to My Profile?
-- [X] ~~Add onboarding flow for setting Business Details + Customizing Review URL~~
 - [ ] Create a seed file for LSL Business Details/Profile Setup
 - [ ] Add a headshot upload step to testimonial collection if sentiment is 9+ and no profile picture available from Gravatar?
 - [ ] Add an approval step between submission and review site ask ("Here's your review. Approve it or edit it." (Save + Approve btn after editing?))
@@ -46,6 +48,7 @@ Leave Some Love is an AI-powered testimonial management platform designed to hel
     - [ ]Feedback or NPS Score: Measures user satisfaction and identifies areas for improvement.
     - [ ]Revenue Metrics: If applicable, track revenue per user, lifetime value, and monthly recurring revenue.
     - [ ]Support Ticket Volume: A gauge of user issues or confusion that might need addressing.
+- [X] ~~Add onboarding flow for setting Business Details + Customizing Review URL~~
 - [X] ~~Modify the chatbot text input field to expand vertically and the text to wrap as the text input length increases.~~
 - [X] ~~Show a visualization of the sentiment score for each review~~
 - [X] ~~Visually separate reviews on the dashboard~~
@@ -84,5 +87,5 @@ Leave Some Love is an AI-powered testimonial management platform designed to hel
 - [ ] Admin: Delete a user
 - [ ] Admin: Edit a testimonial
 - [ ] Admin: Reset a password
-- [ ] 
+
 

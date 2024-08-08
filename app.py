@@ -350,6 +350,8 @@ def index():
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard'))
     if request.method == 'POST':
         email = request.form['email']
         password = request.form['password']
@@ -357,19 +359,22 @@ def register():
         if existing_user is None:
             hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
             new_user = User(email=email, password=hashed_password)
-            # Generate a default custom URL based on the email
             new_user.custom_url = generate_default_custom_url(email)
             db.session.add(new_user)
             try:
                 db.session.commit()
-                flash('Registration successful. Please log in.', 'success')
-                return redirect(url_for('login'))
+                flash('Registration successful!', 'success')
+                return redirect(url_for('registration_success'))
             except IntegrityError:
                 db.session.rollback()
                 flash('An error occurred. Please try again.', 'danger')
         else:
             flash('Email already exists.', 'danger')
     return render_template('register.html')
+
+@app.route('/registration_success')
+def registration_success():
+    return render_template('registration_success.html')
 
 def generate_default_custom_url(email):
     # Use the part before @ in the email as the base for the custom URL

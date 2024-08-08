@@ -1,0 +1,26 @@
+{% extends "base_public.html" %}
+{% block title %}Registration Successful{% endblock %}
+{% block content %}
+<div class="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+  <div class="max-w-md w-full space-y-8">
+    <div class="flex flex-col items-center">
+        <div class="max-w-md mx-auto flex flex-col items-center">
+            <img
+              src="{{ url_for('static', filename='images/leave-some-love-icon.png') }}"
+              alt="Leave Some Love Logo"
+              class="w-full max-w-[40px] pb-6"
+            />
+          </div>
+      <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
+        Registration Successful!
+      </h2>
+      <p class="mt-2 mb-6 text-center text-sm text-gray-600">
+        Your account has been created. You can now log in and start using our services.
+      </p>
+    </div>
+    <div class="flex items-center justify-center">
+      <a href="{{ url_for('login') }}" class="w-full btn btn-primary">Sign In</a>
+    </div>
+  </div>
+</div>
+{% endblock %}
