@@ -25,7 +25,7 @@ function initializeOnboarding() {
     if (chatbotElement) {
         personalInfo.email = chatbotElement.dataset.email;
         baseUrl = new URL(chatbotElement.dataset.baseUrl);
-        baseUrl.protocol = 'https:';  // Force HTTPS
+        baseUrl.protocol = window.location.protocol; // Use the current protocol
         console.log("Email:", personalInfo.email);
         console.log("Base URL:", baseUrl.toString());
         startConversation();

@@ -2,10 +2,16 @@ services:
   web:
     build: .
     ports:
-      - "5000:5000"
+      - "8080:8080"
+    env_file:
+      - .env
     environment:
-      - FLASK_ENV=production
-      - SQLALCHEMY_DATABASE_URI=postgresql+psycopg2://chrisgscott:${DB_PASSWORD}@db/testimonials
+      - FLASK_ENV=${FLASK_ENV}
+      - SQLALCHEMY_DATABASE_URI=${SQLALCHEMY_DATABASE_URI}
+      - FLASK_SECRET_KEY=${FLASK_SECRET_KEY}
+      - SECRET_KEY=${SECRET_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - BREVO_API_KEY=${BREVO_API_KEY}
     depends_on:
       - db
     volumes:
@@ -13,10 +19,6 @@ services:
 
   db:
     image: postgres:13
-    environment:
-      - POSTGRES_DB=testimonials
-      - POSTGRES_USER=chrisgscott
-      - POSTGRES_PASSWORD=${DB_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
