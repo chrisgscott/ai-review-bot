@@ -1,6 +1,6 @@
 # fly.toml app configuration file for leave-some-love
 
-app = 'leave-some-love-dev'
+app = 'leave-some-love'
 primary_region = 'sjc'
 
 [build]
